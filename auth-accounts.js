@@ -114,18 +114,18 @@
   function mode(register) {
     isRegister = !!register;
     $('#authTitle').textContent = register ? 'Создать аккаунт' : 'Войти в Mello';
-    $('#authIntro').textContent = register ? 'Почта или номер нужны как логин. Код подтверждения пока не отправляется — придумай пароль из 8 или более цифр.' : 'Войди с помощью почты или номера и пароля.';
+    $('#authIntro').textContent = register ? 'Почта или номер нужны как логин. Создай постоянный пароль только из цифр, минимум 8.' : 'Войди с помощью почты или номера и постоянного цифрового пароля.';
     nameField.classList.toggle('hidden', !register);
     $('#nameInput').required = register;
     if (passwordLabel) passwordLabel.classList.remove('hidden');
     $('#passwordInput').required = true;
     $('#passwordInput').disabled = false;
     $('#passwordInput').autocomplete = register ? 'new-password' : 'current-password';
-    $('#passwordInput').minLength = register ? 8 : 1;
-    $('#passwordInput').pattern = register ? '[0-9]{8,}' : '';
+    $('#passwordInput').minLength = 8;
+    $('#passwordInput').pattern = '[0-9]{8,}';
     $('#passwordInput').inputMode = 'numeric';
-    $('#passwordInput').placeholder = register ? 'Минимум 8 цифр' : 'Введи свой пароль';
-    if (passwordLabel) passwordLabel.querySelector('span').textContent = register ? 'Пароль (только цифры)' : 'Пароль';
+    $('#passwordInput').placeholder = 'Минимум 8 цифр';
+    if (passwordLabel) passwordLabel.querySelector('span').textContent = 'Пароль (минимум 8 цифр)';
     $('#authSubmit').textContent = register ? 'Создать аккаунт' : 'Войти';
     $('#authSubmit').classList.remove('hidden');
     $('#switchAuth').textContent = register ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться';
@@ -133,7 +133,7 @@
   }
   function resetChallenge() {
     const note = $('#demo-note');
-    if (note) note.textContent = 'Код на почту пока не приходит: почта используется только как логин. Пароль и аккаунт хранятся в этом браузере и не синхронизируются между устройствами.';
+    if (note) note.textContent = 'Это демо-вход по постоянному паролю из 8 или более цифр. Email или номер служит логином. Аккаунт и парольный хеш хранятся только в этом браузере и не синхронизируются между устройствами.';
   }
 
   const passwordRules = pass => /^[0-9]{8,}$/.test(pass);
@@ -150,7 +150,7 @@
     return result.passwordHash === record.passwordHash;
   }
 
-  // Replace the old email/password controls with email-or-phone code flow.
+  // Use a persistent numeric password with either an email or phone login.
   const identityLabel = identityInput.closest('label');
   identityLabel.querySelector('span').id = 'authIdentityLabel';
   const regionField = document.createElement('label');
@@ -204,6 +204,7 @@
     e.preventDefault();
     const value = identityValue(), pass = $('#passwordInput').value;
     if (!validIdentity(value)) { toast(method === 'email' ? 'Введи корректный email' : 'Введи номер с кодом страны'); return; }
+    if (!passwordRules(pass)) { toast('Пароль должен состоять минимум из 8 цифр'); $('#passwordInput').focus(); return; }
     if (isRegister) {
       if (!$('#nameInput').value.trim()) { toast('Сначала введи имя'); $('#nameInput').focus(); return; }
       if (!passwordRules(pass)) { toast('Пароль должен состоять минимум из 8 цифр'); $('#passwordInput').focus(); return; }

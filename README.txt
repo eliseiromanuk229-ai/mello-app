@@ -2,7 +2,7 @@ Mello — GitHub Pages preview bundle
 
 Upload all files in this folder into the root of a public GitHub repository, then in Settings → Pages select Deploy from a branch, main, /(root). The published site will be a static demonstration.
 
-Email/phone verification codes are simulated and shown on-screen. No email or SMS is sent. Multiple accounts, groups, channels, polls, and messages are saved only in the current browser. Never enter real passwords or private information.
+Sign in with an email address or phone number and a persistent numeric password of at least 8 digits. No one-time code is used and no email or SMS is sent. Accounts and messages are saved only in the current browser; use a unique demo password, not one used for other services.
 
 GitHub Pages serves static HTML/CSS/JavaScript. It is suitable for showing this prototype, not for a real messaging backend; GitHub also says Pages is not intended for a SaaS product. A real messenger needs a separate server, database, file storage, and email/SMS provider.
 
