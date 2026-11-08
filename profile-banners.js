@@ -12,7 +12,7 @@
   const banners = [...imageBanners, ...videoBanners];
   const randomFaces = ['😊', '😎', '🥰', '🤩', '😄', '🙂', '😺', '😉', '😁', '😇', '😋', '🤗'];
   const key = () => `mello.profile.banner:${account?.id || account?.email || account?.phone || 'guest'}`;
-  const savedBanner = () => { try { return localStorage.getItem(key()) || ''; } catch { return ''; } };
+  const savedBanner = () => { try { const file = localStorage.getItem(key()) || ''; return account?.unlockedBanners?.includes(file) ? file : ''; } catch { return ''; } };
   const getBanner = (selection) => banners.find(item => item.file === selection);
   const avatarMarkup = (person) => person?.avatar
     ? `<img src="${person.avatar}" alt="">`
@@ -63,7 +63,9 @@
   const createBannerPicker = () => {
     const box = document.createElement('section');
     box.className = 'mello-banner-box';
-    box.innerHTML = `<div class="mello-banner-heading"><span>Баннер профиля</span><small>Все баннеры бесплатны в демо</small></div><div class="mello-banner-options"><button type="button" class="mello-banner-choice" data-banner="random" aria-label="Случайный смайлик">🙂</button>${banners.map(b => `<button type="button" class="mello-banner-choice" data-banner="${b.file}" aria-label="${b.title}" title="${b.title}">${b.video ? `<video data-video-src="${b.url}" muted loop playsinline preload="none"></video>` : b.url ? `<img src="${b.url}" alt="" loading="lazy">` : `<span style="display:block;width:100%;height:100%;background:${b.gradient}"></span>`}</button>`).join('')}</div>`;
+    const ownedBanners = banners.filter(b => account?.unlockedBanners?.includes(b.file));
+    const bannerChoices = ownedBanners.map(b => `<button type="button" class="mello-banner-choice" data-banner="${b.file}" aria-label="${b.title}" title="${b.title}">${b.video ? `<video data-video-src="${b.url}" muted loop playsinline preload="none"></video>` : b.url ? `<img src="${b.url}" alt="" loading="lazy">` : `<span style="display:block;width:100%;height:100%;background:${b.gradient}"></span>`}</button>`).join('');
+    box.innerHTML = `<div class="mello-banner-heading"><span>Баннер профиля</span><small>Баннеры из магазина · 300 монет</small></div><div class="mello-banner-options"><button type="button" class="mello-banner-choice" data-banner="random" aria-label="Случайный смайлик">🙂</button>${bannerChoices}</div>${ownedBanners.length ? '' : '<p style="margin:8px 0;color:#a9c6b5;font-size:10px">Баннеров пока нет. Открой магазин и купи баннер за монеты.</p>'}<button type="button" class="setting-action" data-open-banner-shop>Открыть магазин баннеров</button>`;
     if ('IntersectionObserver' in window) {
       const observer = new IntersectionObserver(entries => entries.forEach(entry => {
         if (!entry.isIntersecting) return;
@@ -75,6 +77,7 @@
     }
     const refresh = () => box.querySelectorAll('[data-banner]').forEach(button => button.classList.toggle('selected', button.dataset.banner === (savedBanner() || 'random')));
     box.addEventListener('click', e => {
+      if (e.target.closest('[data-open-banner-shop]')) { window.openMelloBannerShop?.(); return; }
       const choice = e.target.closest('[data-banner]');
       if (!choice) return;
       try { choice.dataset.banner === 'random' ? localStorage.removeItem(key()) : localStorage.setItem(key(), choice.dataset.banner); } catch {}
@@ -107,7 +110,7 @@
   const showPersonCard = ({ name, username, avatar, emoji, selection, own = false, personId = '', giftable = true, entityType = 'person' }) => {
     const host = document.querySelector('#modalHost');
     if (!host) return;
-    const banner = own ? (savedBanner() || account?.profileBanner || '') : selection;
+    const banner = own ? savedBanner() : selection;
     const starBalance = Number.isFinite(account?.melloStars) ? account.melloStars : 10;
     const isBlocked = (account?.blockedUsers || []).includes(personId);
     const canGift = !own && giftable && !!personId && personId !== 'mello-support' && !String(personId).startsWith('bot_');
