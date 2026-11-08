@@ -80,6 +80,7 @@
     const welcome = $('#welcomeName'); if (welcome) welcome.textContent = account.name || 'Mello';
     window.updateSelfAvatar?.();
     window.renderChats?.();
+    window.consumeMelloInvite?.();
   };
 
   function identityValue() {
