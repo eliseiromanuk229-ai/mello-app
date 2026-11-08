@@ -59,6 +59,14 @@
     event.preventDefault();event.stopImmediatePropagation();
     returnToChatList();
   },true);
+  document.addEventListener('click',event=>{
+    const close=event.target.closest('#profileDrawer .drawer-close');
+    if(!close)return;
+    event.preventDefault();event.stopImmediatePropagation();
+    const drawer=close.closest('#profileDrawer');
+    drawer?.classList.remove('open');
+    drawer?.setAttribute('aria-hidden','true');
+  },true);
 
   function showModal(html, onClick) {
     const host = $('#modalHost'); if (!host) return null;
