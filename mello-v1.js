@@ -206,7 +206,8 @@
     if (!account || !Array.isArray(chats)) return;
     if (!chats.some(chat => chat.id === 'mello-saved')) chats.unshift({ id:'mello-saved', personId:'mello-saved', type:'personal', title:'Избранное', messages:[] });
     if (!chats.some(chat => chat.id === 'mello-support')) chats.push({ id:'mello-support', personId:'mello-support', type:'personal', title:'Поддержка Mello', ownerId:'mello-creator', messages:[{ text:'Привет! Здесь можно оставить идею, вопрос или сообщение о проблеме.', time:timeNow(), mine:false, role:'Бот' }] });
-    if (!chats.some(chat => chat.id === 'mello-maxim')) chats.push({ id:'mello-maxim', personId:'mello-maxim', type:'personal', title:'Максим · ИИ', messages:[{ text:'Привет, я Максим — ИИ-собеседник Mello. Выбери в шапке чата мягкий или резкий стиль и напиши мне.', time:timeNow(), mine:false, role:'Максим' }] });
+    if (!chats.some(chat => chat.id === 'mello-maxim')) chats.push({ id:'mello-maxim', personId:'mello-maxim', type:'personal', title:'Помощь от ИИ', messages:[{ text:'Привет! Я помощник Mello на основе ИИ. Выбери в шапке мягкий или резкий стиль и напиши мне.', time:timeNow(), mine:false, role:'Помощь от ИИ' }] });
+    const aiHelpChat=chats.find(chat=>chat.id==='mello-maxim');if(aiHelpChat){aiHelpChat.title='Помощь от ИИ';aiHelpChat.messages=aiHelpChat.messages.map(message=>message.role==='Максим'?{...message,role:'Помощь от ИИ',text:message.text?.includes('я Максим')?'Привет! Я помощник Mello на основе ИИ. Выбери в шапке чата мягкий или резкий стиль и напиши мне.':message.text}:message)}
     if (!Array.isArray(account.blockedUsers)) account.blockedUsers=[];
     if (!Array.isArray(account.unlockedBanners)) account.unlockedBanners=[];
     if (!Number.isFinite(account.melloCoins)) account.melloCoins=0;
@@ -214,7 +215,7 @@
     save();
   }
   const previousPerson = window.person || person;
-  window.person = id => id === 'mello-saved' ? {id,name:'Избранное',username:'Только для тебя',emoji:'🔖',a:'#78e4a7',b:'#1c6441'} : id === 'mello-support' ? {id,name:'Поддержка Mello',username:'@mello_support',emoji:'💬',a:'#70e8ab',b:'#18714b'} : id === 'mello-maxim' ? {id,name:'Максим · ИИ',username:'ИИ-собеседник',emoji:'🤖',a:'#95c9ff',b:'#5352ad'} : previousPerson(id);
+  window.person = id => id === 'mello-saved' ? {id,name:'Избранное',username:'Только для тебя',emoji:'🔖',a:'#78e4a7',b:'#1c6441'} : id === 'mello-support' ? {id,name:'Поддержка Mello',username:'@mello_support',emoji:'💬',a:'#70e8ab',b:'#18714b'} : id === 'mello-maxim' ? {id,name:'Помощь от ИИ',username:'ИИ-помощник Mello',emoji:'🤖',a:'#95c9ff',b:'#5352ad'} : previousPerson(id);
   const previousRenderChats = window.renderChats || renderChats;
   window.renderChats = function(){ensureSystemChats();previousRenderChats();const list=$('#chatList');if(!list)return;const blocked=new Set(account?.blockedUsers||[]);for(const row of list.querySelectorAll('[data-chat]')){const c=chats.find(x=>x.id===row.dataset.chat),p=row.querySelector('.preview');if(c?.id==='mello-saved'){row.querySelector('.avatar').innerHTML=`<img src="${emojiUrl('🔖')}" alt="">`;row.querySelector('.title').textContent='Избранное';}if(c?.id==='mello-support'){row.querySelector('.avatar').innerHTML=`<img src="${emojiUrl('💬')}" alt="">`;row.querySelector('.title').textContent='Поддержка Mello';row.querySelector('.title')?.insertAdjacentHTML('beforebegin','<span class="mello-support-badge">MELLO</span>');}if(p&&c?.id==='mello-support')p.textContent='Написать в поддержку';if(p&&blocked.has(c?.personId))p.textContent='Пользователь в чёрном списке';}};
 
@@ -324,7 +325,7 @@
       if(toneButton)toneButton.textContent=`Тон: ${account.melloMaximTone==='sharp'?'Резкий + мат':'Мягкий'}`;
     }
   };
-  document.addEventListener('click',e=>{const target=e.target instanceof Element?e.target:e.target?.parentElement;if(!target?.closest('[data-maxim-tone]'))return;account.melloMaximTone=account.melloMaximTone==='sharp'?'soft':'sharp';save();window.openChat('mello-maxim');toast(`Максим отвечает ${account.melloMaximTone==='sharp'?'резко, можно с матом':'мягко'}`)});
+  document.addEventListener('click',e=>{const target=e.target instanceof Element?e.target:e.target?.parentElement;if(!target?.closest('[data-maxim-tone]'))return;account.melloMaximTone=account.melloMaximTone==='sharp'?'soft':'sharp';save();window.openChat('mello-maxim');toast(`Помощь от ИИ отвечает ${account.melloMaximTone==='sharp'?'резко, можно с матом':'мягко'}`)});
   $('#backBtn')?.addEventListener('click',()=>{lastChat=null;},true);
   window.addEventListener('popstate',()=>{if(current){lastChat=null;$('#backBtn')?.click();}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&current){lastChat=null;$('#backBtn')?.click();}});
@@ -356,13 +357,13 @@
     }
     if(chat.id!=='mello-maxim')return;
     const tone=account.melloMaximTone==='sharp'?'РЕЗКИЙ ТОН: отвечай коротко, прямо и энергично, максимум 1–3 предложения. Допускается умеренный русский мат как разговорная эмоциональная окраска; не оскорбляй собеседника лично, не унижай и не угрожай.':'МЯГКИЙ ТОН: отвечай тепло и доброжелательно, тоже кратко — максимум 1–3 предложения, если пользователь не просит подробностей.';
-    const typing={text:'Максим печатает…',time:timeNow(),mine:false,role:'Максим',typing:true};
+    const typing={text:'ИИ отвечает…',time:timeNow(),mine:false,role:'Помощь от ИИ',typing:true};
     chat.messages.push(typing);save();openChat(chat.id);
     const conversation=chat.messages.filter(m=>!m.typing&&m.text).slice(-14).map(m=>({role:m.mine?'user':'assistant',content:String(m.text).slice(0,5000)}));
     if(conversation.length){const last=conversation[conversation.length-1];last.content=`[Стиль ответа: ${tone}]\n\n${last.content}`;}
     fetch('https://wild-meadow-76d1.phujna56.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:conversation}),signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(45000):undefined})
       .then(async response=>{const data=await response.json().catch(()=>({}));if(!response.ok||typeof data.reply!=='string')throw new Error(data.error||'Сервис временно недоступен');return data.reply.trim()})
-      .then(reply=>{chat.messages=chat.messages.filter(m=>m!==typing);chat.messages.push({text:reply,time:timeNow(),mine:false,role:'Максим'});save();if(current===chat.id)openChat(chat.id);})
+      .then(reply=>{chat.messages=chat.messages.filter(m=>m!==typing);chat.messages.push({text:reply,time:timeNow(),mine:false,role:'Помощь от ИИ'});save();if(current===chat.id)openChat(chat.id);})
       .catch(()=>{chat.messages=chat.messages.filter(m=>m!==typing);chat.messages.push({text:'Сейчас не получилось подключиться к ИИ. Попробуй отправить ещё раз чуть позже.',time:timeNow(),mine:false,role:'Максим'});save();if(current===chat.id)openChat(chat.id);});
   };
 
