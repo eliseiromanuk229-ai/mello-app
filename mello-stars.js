@@ -13,6 +13,7 @@
     if (!Number.isFinite(account.melloStars)) account.melloStars = 10;
     return Math.max(0, account.melloStars);
   };
+  const infiniteWallet = () => !!window.melloHasInfiniteWallet?.();
   const saveStars = () => { if (account && typeof save === 'function') save(); };
 
   const styles = document.createElement('style');
@@ -47,15 +48,14 @@
     const host = document.querySelector('#modalHost');
     if (!host || !account) return;
     const balance = storedStars();
-    host.innerHTML = `<div class="modal-bg" id="melloGiftBg"><section class="mello-stars-panel"><div class="modal-top"><h2>Подарки Mello</h2><button type="button" class="close" data-gift-close aria-label="Закрыть">×</button></div><div class="mello-stars-balance"><div><strong>Твои Stars</strong><small>Баланс этого демо-аккаунта</small></div><span class="mello-stars-badge"><img src="${emojiUrl('⭐')}" alt=""> <span data-stars-count>${balance}</span></span></div><div class="mello-gift-grid">${gifts.map(gift => `<button type="button" class="mello-gift-choice" data-gift-id="${gift.id}" ${balance < gift.stars ? 'disabled' : ''}><img src="${emojiUrl(gift.emoji)}" alt="${gift.name}"><span><b>${gift.name}</b><small>${gift.stars} <img class="mello-stars-inline" src="${emojiUrl('⭐')}" alt="Stars"></small></span></button>`).join('')}</div><p class="mello-stars-note">Подарок спишет звёзды с твоего демо-баланса и появится в чате. Покупки и реальные платежи пока не подключены.</p></section></div>`;
+    host.innerHTML = `<div class="modal-bg" id="melloGiftBg"><section class="mello-stars-panel"><div class="modal-top"><h2>Подарки Mello</h2><button type="button" class="close" data-gift-close aria-label="Закрыть">×</button></div><div class="mello-stars-balance"><div><strong>Твои Stars</strong><small>Баланс этого демо-аккаунта</small></div><span class="mello-stars-badge"><img src="${emojiUrl('⭐')}" alt=""> <span data-stars-count>${infiniteWallet()?'∞':balance}</span></span></div><div class="mello-gift-grid">${gifts.map(gift => `<button type="button" class="mello-gift-choice" data-gift-id="${gift.id}" ${!infiniteWallet()&&balance < gift.stars ? 'disabled' : ''}><img src="${emojiUrl(gift.emoji)}" alt="${gift.name}"><span><b>${gift.name}</b><small>${gift.stars} <img class="mello-stars-inline" src="${emojiUrl('⭐')}" alt="Stars"></small></span></button>`).join('')}</div><p class="mello-stars-note">Подарок спишет звёзды с твоего демо-баланса и появится в чате. Покупки и реальные платежи пока не подключены.</p></section></div>`;
     const close = () => host.replaceChildren();
     host.querySelector('[data-gift-close]').onclick = close;
     host.querySelector('#melloGiftBg').onclick = e => { if (e.target.id === 'melloGiftBg') close(); };
     host.querySelectorAll('[data-gift-id]').forEach(button => button.onclick = () => {
       const gift = gifts.find(item => item.id === button.dataset.giftId);
-      if (!gift || storedStars() < gift.stars) return;
-      account.melloStars = storedStars() - gift.stars;
-      saveStars();
+      if (!gift || (!infiniteWallet() && storedStars() < gift.stars)) return;
+      if (!infiniteWallet()) { account.melloStars = storedStars() - gift.stars; saveStars(); }
       close();
       if (target.personId) {
         let chosen = chats.find(item => item.personId === target.personId);
