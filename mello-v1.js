@@ -70,10 +70,12 @@
   },true);
   document.addEventListener('pointerdown',event=>{
     const target=event.target instanceof Element?event.target:event.target?.parentElement;
-    if(!target?.closest('#profileDrawer .drawer-close'))return;
-    const drawer=$('#profileDrawer');
-    drawer?.classList.remove('open');
-    drawer?.setAttribute('aria-hidden','true');
+    const close=target?.closest('#profileDrawer .drawer-close, #modalHost .mello-profile-top [aria-label="Закрыть"], #modalHost [data-close-profile]');
+    if(!close)return;
+    event.preventDefault();event.stopImmediatePropagation();
+    const drawer=close.closest('#profileDrawer');
+    if(drawer){drawer.classList.remove('open');drawer.setAttribute('aria-hidden','true');}
+    else close.closest('#modalHost')?.replaceChildren();
   },true);
 
   function showModal(html, onClick) {
@@ -311,11 +313,12 @@
     if(!lastChat&&id)history.pushState({melloChat:id},'','#chat');
     lastChat=id;
     originalOpenChat(id);
+    $('#chatHead [data-maxim-tone]')?.remove();
     const chat=chats.find(c=>c.id===id);
     if(chat?.id==='mello-support'){$('#conversationHead small')?.insertAdjacentHTML('afterbegin','<span class="mello-support-badge">MELLO</span>');}
     if(chat?.id==='mello-saved'){$('#conversationHead small')?.insertAdjacentHTML('afterbegin','<span class="mello-support-badge">ТОЛЬКО ТЫ</span>');}
     if(chat?.id==='mello-maxim'){
-      const head=$('#conversationHead'),actions=head?.querySelector('.head-actions');
+      const head=$('#chatHead'),actions=head?.querySelector('.head-actions');
       let toneButton=head?.querySelector('[data-maxim-tone]');
       if(head&&!toneButton){toneButton=document.createElement('button');toneButton.type='button';toneButton.dataset.maximTone='1';toneButton.style.cssText='margin-left:auto;border:1px solid #ffffff20;border-radius:999px;padding:8px 12px;background:#ffffff0a;color:#eafff2;font:inherit;font-size:12px;cursor:pointer';if(actions)head.insertBefore(toneButton,actions);else head.appendChild(toneButton);}
       if(toneButton)toneButton.textContent=`Тон: ${account.melloMaximTone==='sharp'?'Резкий + мат':'Мягкий'}`;
