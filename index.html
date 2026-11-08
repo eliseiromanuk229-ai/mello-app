@@ -134,7 +134,7 @@ $('#createSticker').onclick=async()=>{const emoji=$('#creatorEmoji').value.trim(
 </script><script>
 (()=>{const prior=window.openChat;if(!prior)return;window.openChat=function(id){prior(id);const c=chats.find(x=>x.id===id),p=c&&person(c.personId),head=document.querySelector('#conversationHead');if(!c||!head)return;const avatar=head.querySelector('.avatar'),small=head.querySelector('small');if(avatar&&c.type==='channels')avatar.textContent='📣';else if(avatar&&c.type==='groups')avatar.textContent='👥';if(small)small.textContent=c.type==='channels'?'канал · демо-лента':c.type==='groups'?'группа · демо':(p?.username||'профиль Mello')}})();
 </script>
-<script src="./emoji-library.js"></script><script src="./emoji-assets.js"></script><script src="./auth-accounts.js?v=21"></script>
+<script src="./emoji-library.js"></script><script src="./emoji-assets.js"></script><script src="./auth-accounts.js?v=22"></script>
 
 
 

@@ -203,6 +203,7 @@
   form.onsubmit = async e => {
     e.preventDefault();
     const value = identityValue(), pass = $('#passwordInput').value;
+    let firstPasswordSetup = false;
     if (!validIdentity(value)) { toast(method === 'email' ? 'Введи корректный email' : 'Введи номер с кодом страны'); return; }
     if (!passwordRules(pass)) { toast('Пароль должен состоять минимум из 8 цифр'); $('#passwordInput').focus(); return; }
     if (isRegister) {
@@ -222,14 +223,15 @@
         if (found.password !== pass) { toast('Неверный пароль'); $('#passwordInput').focus(); return; }
         Object.assign(found, await makePassword(pass)); delete found.password;
       } else {
-        toast('У этого демо-аккаунта ещё нет пароля. Переключись на регистрацию, чтобы создать аккаунт с паролем.'); return;
+        Object.assign(found, await makePassword(pass));
+        firstPasswordSetup = true;
       }
       activeId = found.id; account = { ...found }; chats = Array.isArray(found.chats) ? [...found.chats] : [];
     }
     sessionStorage.removeItem('mello.forceLogin');
     writeActive();
     window.enter();
-    toast(isRegister ? 'Демо-аккаунт создан' : 'Вход выполнен');
+    toast(isRegister ? 'Демо-аккаунт создан' : firstPasswordSetup ? 'Постоянный пароль создан' : 'Вход выполнен');
   };
 
   window.leave = function leaveToAccountLogin() {
