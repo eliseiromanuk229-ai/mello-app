@@ -110,7 +110,7 @@
   const createInviteLink = chat => {
     if (!chat || !['groups','channels'].includes(chat.type)) return '';
     if (!chat.inviteId) { chat.inviteId = crypto.randomUUID?.() || `inv_${Date.now()}_${Math.random().toString(36).slice(2,10)}`; save(); }
-    const payload = { v: 1, inviteId: chat.inviteId, chatId: chat.id, type: chat.type, title: chat.title || 'Сообщество' };
+    const payload = { v: 1, inviteId: chat.inviteId, type: chat.type, title: chat.title || 'Сообщество' };
     const token = btoa(unescape(encodeURIComponent(JSON.stringify(payload)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
     const url = new URL('./', location.href); url.hash = `invite=${token}`; return url.href;
   };
@@ -156,7 +156,7 @@
     if (match) history.replaceState(null, '', location.pathname + location.search);
     const invite = decodeInvite(token);
     if (!invite) { toast('Ссылка-приглашение повреждена или устарела.'); return false; }
-    let chat = chats.find(item => item.inviteId === invite.inviteId || item.id === invite.chatId);
+    let chat = chats.find(item => item.inviteId === invite.inviteId);
     if (!chat) {
       const fallbackPerson = defaultPeople[0];
       chat = { id: `invite_${invite.inviteId}`, inviteId: invite.inviteId, personId: fallbackPerson.id, type: invite.type, title: String(invite.title || 'Сообщество').slice(0, 80), memberIds: [], messages: [], joinedByInvite: true };
