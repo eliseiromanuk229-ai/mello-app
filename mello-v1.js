@@ -188,6 +188,7 @@
     if (!account || !Array.isArray(chats)) return;
     if (!chats.some(chat => chat.id === 'mello-saved')) chats.unshift({ id:'mello-saved', personId:'mello-saved', type:'personal', title:'Избранное', messages:[] });
     if (!chats.some(chat => chat.id === 'mello-support')) chats.push({ id:'mello-support', personId:'mello-support', type:'personal', title:'Поддержка Mello', ownerId:'mello-creator', messages:[{ text:'Привет! Здесь можно оставить идею, вопрос или сообщение о проблеме.', time:timeNow(), mine:false, role:'Бот' }] });
+    if (!chats.some(chat => chat.id === 'mello-maxim')) chats.push({ id:'mello-maxim', personId:'mello-maxim', type:'personal', title:'Максим · ИИ', messages:[{ text:'Привет, я Максим — ИИ-собеседник Mello. Выбери в шапке чата мягкий или резкий стиль и напиши мне.', time:timeNow(), mine:false, role:'Максим' }] });
     if (!Array.isArray(account.blockedUsers)) account.blockedUsers=[];
     if (!Array.isArray(account.unlockedBanners)) account.unlockedBanners=[];
     if (!Number.isFinite(account.melloCoins)) account.melloCoins=0;
@@ -195,7 +196,7 @@
     save();
   }
   const previousPerson = window.person || person;
-  window.person = id => id === 'mello-saved' ? {id,name:'Избранное',username:'Только для тебя',emoji:'🔖',a:'#78e4a7',b:'#1c6441'} : id === 'mello-support' ? {id,name:'Поддержка Mello',username:'@mello_support',emoji:'💬',a:'#70e8ab',b:'#18714b'} : previousPerson(id);
+  window.person = id => id === 'mello-saved' ? {id,name:'Избранное',username:'Только для тебя',emoji:'🔖',a:'#78e4a7',b:'#1c6441'} : id === 'mello-support' ? {id,name:'Поддержка Mello',username:'@mello_support',emoji:'💬',a:'#70e8ab',b:'#18714b'} : id === 'mello-maxim' ? {id,name:'Максим · ИИ',username:'ИИ-собеседник',emoji:'🤖',a:'#95c9ff',b:'#5352ad'} : previousPerson(id);
   const previousRenderChats = window.renderChats || renderChats;
   window.renderChats = function(){ensureSystemChats();previousRenderChats();const list=$('#chatList');if(!list)return;const blocked=new Set(account?.blockedUsers||[]);for(const row of list.querySelectorAll('[data-chat]')){const c=chats.find(x=>x.id===row.dataset.chat),p=row.querySelector('.preview');if(c?.id==='mello-saved'){row.querySelector('.avatar').innerHTML=`<img src="${emojiUrl('🔖')}" alt="">`;row.querySelector('.title').textContent='Избранное';}if(c?.id==='mello-support'){row.querySelector('.avatar').innerHTML=`<img src="${emojiUrl('💬')}" alt="">`;row.querySelector('.title').textContent='Поддержка Mello';row.querySelector('.title')?.insertAdjacentHTML('beforebegin','<span class="mello-support-badge">MELLO</span>');}if(p&&c?.id==='mello-support')p.textContent='Написать в поддержку';if(p&&blocked.has(c?.personId))p.textContent='Пользователь в чёрном списке';}};
 
@@ -270,25 +271,16 @@
     claim?.addEventListener('click',()=>{account.melloStars=(account.melloStars??10)+1;account.melloCoins=(account.melloCoins??0)+300;save();refreshBalance();panel?.remove();toast('Начислено: +1 Star и +300 монет')});
   }
   function openBannerShop(){
-    const panel=showModal(`<section class="mello-dialog"><div class="modal-top"><div><h2>Магазин баннеров</h2><p>Картинки — 2100 монет · видео без звука — 4200</p></div><button class="close" data-v1-close>×</button></div><div class="mello-stars-balance"><span>Твои монеты</span><b>${account?.melloCoins??0} 🪙</b></div><div class="mello-banner-shop-grid" style="margin-top:12px">${banners.map((b,i)=>{const unlocked=(account.unlockedBanners||[]).includes(b.file),price=b.kind==='video'?4200:2100;const bg=b.kind==='image'&&b.file.endsWith('.jpg')?`url('./assets/banners/${b.file}')`:`linear-gradient(135deg,${b.gradient||['#08251b,#28684b,#192944','#102c37,#39809a,#202342','#132b20,#667444,#121e1a'][i-38]})`;const art=b.kind==='video'?`<video class="mello-shop-video" data-video-src="./assets/banner-videos/${b.file}" muted loop autoplay playsinline preload="none" aria-label="${escape(b.title)}"></video>`:'';return `<article class="mello-banner-shop-card"><div class="mello-banner-shop-art ${b.kind==='video'?'mello-video-art':''} ${b.kind==='image'&&!b.file.endsWith('.jpg')?'mello-liquid-art':''}" style="background-image:${b.kind==='video'?'none':`linear-gradient(#07150c22,#07150c22),${bg}`}" ${b.kind==='video'?'data-video-card':''}>${art}</div><div class="mello-banner-shop-meta"><span>${escape(b.title)}</span><button type="button" data-buy-banner="${i}" ${unlocked?'disabled':''}>${unlocked?'Есть':`${price} 🪙`}</button></div></article>`}).join('')}</div><h3 style="margin:17px 0 4px;font-size:12px">Пакеты Stars</h3><p>Реальная покупка появится после подключения магазина и платёжного провайдера. Пакеты $0.99, $1.99 и $4.99 — макет.</p><div class="mello-quick-actions"><button disabled>50 Stars · $0.99</button><button disabled>120 Stars · $1.99</button><button disabled>350 Stars · $4.99</button></div></section>`,e=>{
+    const panel=showModal(`<section class="mello-dialog"><div class="modal-top"><div><h2>Баннеры профиля</h2><p>В демо все баннеры можно забрать бесплатно</p></div><button class="close" data-v1-close>×</button></div><div class="mello-banner-shop-grid" style="margin-top:12px">${banners.map((b,i)=>{const unlocked=(account.unlockedBanners||[]).includes(b.file);const bg=b.kind==='image'&&b.file.endsWith('.jpg')?`url('./assets/banners/${b.file}')`:`linear-gradient(135deg,${b.gradient||['#08251b,#28684b,#192944','#102c37,#39809a,#202342','#132b20,#667444,#121e1a'][i-38]})`;const art=b.kind==='video'?`<video class="mello-shop-video" data-video-src="./assets/banner-videos/${b.file}" muted loop autoplay playsinline preload="none" aria-label="${escape(b.title)}"></video>`:'';return `<article class="mello-banner-shop-card"><div class="mello-banner-shop-art ${b.kind==='video'?'mello-video-art':''} ${b.kind==='image'&&!b.file.endsWith('.jpg')?'mello-liquid-art':''}" style="background-image:${b.kind==='video'?'none':`linear-gradient(#07150c22,#07150c22),${bg}`}" ${b.kind==='video'?'data-video-card':''}>${art}</div><div class="mello-banner-shop-meta"><span>${escape(b.title)}</span><button type="button" data-buy-banner="${i}" ${unlocked?'disabled':''}>${unlocked?'Есть':'Забрать бесплатно'}</button></div></article>`}).join('')}</div><h3 style="margin:17px 0 4px;font-size:12px">Пакеты Stars</h3><p>Реальная покупка появится после подключения магазина и платёжного провайдера. Пакеты $0.99, $1.99 и $4.99 — макет.</p><div class="mello-quick-actions"><button disabled>50 Stars · $0.99</button><button disabled>120 Stars · $1.99</button><button disabled>350 Stars · $4.99</button></div></section>`,e=>{
       const buy=e.target.closest('[data-buy-banner]');if(!buy)return;
-      const item=banners[Number(buy.dataset.buyBanner)],price=item.kind==='video'?4200:2100;
-      if((account.melloCoins??0)<price){toast(`Нужно ${price} монет. Их можно получить за просмотр демо-рекламы.`);return}
-      account.melloCoins-=price;account.unlockedBanners=account.unlockedBanners||[];account.unlockedBanners.push(item.file);save();toast(`Баннер «${item.title}» разблокирован`);openBannerShop();
+      const item=banners[Number(buy.dataset.buyBanner)];
+      account.unlockedBanners=account.unlockedBanners||[];if(!account.unlockedBanners.includes(item.file))account.unlockedBanners.push(item.file);save();toast(`Баннер «${item.title}» добавлен бесплатно`);openBannerShop();
     });
     const videos=[...panel.querySelectorAll('[data-video-card]')];
     if('IntersectionObserver' in window){const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(!entry.isIntersecting)return;const video=entry.target.querySelector('video[data-video-src]');if(video&&!video.src){video.src=video.dataset.videoSrc;video.play().catch(()=>{})}observer.unobserve(entry.target)}),{root:panel,rootMargin:'100px'});videos.forEach(card=>observer.observe(card))}
     else videos.forEach(card=>{const video=card.querySelector('video');video.src=video.dataset.videoSrc;video.play().catch(()=>{})});
     return panel;
   }  window.openMelloBannerShop=openBannerShop;
-
-  // Let banner picker sell locked art; free previews remain available until purchase.
-  document.addEventListener('click',e=>{
-    const choice=e.target.closest('.mello-banner-choice[data-banner]');if(!choice)return;
-    const id=choice.dataset.banner;if(id==='random')return;
-    const unlocked=account?.unlockedBanners||[];
-    if(!unlocked.includes(id)&&account?.profileBanner!==id){e.stopImmediatePropagation();openBannerShop();toast(`Сначала открой баннер в магазине за ${id.endsWith('.mp4')?'4200':'2100'} монет`);}
-  },true);
 
   // One-click block controls on other users' profile cards.
   document.addEventListener('click',e=>{
@@ -306,7 +298,14 @@
     const chat=chats.find(c=>c.id===id);
     if(chat?.id==='mello-support'){$('#conversationHead small')?.insertAdjacentHTML('afterbegin','<span class="mello-support-badge">MELLO</span>');}
     if(chat?.id==='mello-saved'){$('#conversationHead small')?.insertAdjacentHTML('afterbegin','<span class="mello-support-badge">ТОЛЬКО ТЫ</span>');}
+    if(chat?.id==='mello-maxim'){
+      const head=$('#conversationHead'),actions=head?.querySelector('.head-actions');
+      let toneButton=head?.querySelector('[data-maxim-tone]');
+      if(head&&!toneButton){toneButton=document.createElement('button');toneButton.type='button';toneButton.dataset.maximTone='1';toneButton.style.cssText='margin-left:auto;border:1px solid #ffffff20;border-radius:999px;padding:8px 12px;background:#ffffff0a;color:#eafff2;font:inherit;font-size:12px;cursor:pointer';if(actions)head.insertBefore(toneButton,actions);else head.appendChild(toneButton);}
+      if(toneButton)toneButton.textContent=`Тон: ${account.melloMaximTone==='sharp'?'Резкий':'Мягкий'}`;
+    }
   };
+  document.addEventListener('click',e=>{if(!e.target.closest('[data-maxim-tone]'))return;account.melloMaximTone=account.melloMaximTone==='sharp'?'soft':'sharp';save();window.openChat('mello-maxim');toast(`Максим отвечает ${account.melloMaximTone==='sharp'?'резко':'мягко'}`)});
   $('#backBtn')?.addEventListener('click',()=>{lastChat=null;},true);
   window.addEventListener('popstate',()=>{if(current){lastChat=null;$('#backBtn')?.click();}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&current){lastChat=null;$('#backBtn')?.click();}});
@@ -327,7 +326,26 @@
   };
 
   const messageForm=$('#composer'),oldMessageSubmit=messageForm?.onsubmit;
-  if(messageForm&&oldMessageSubmit)messageForm.onsubmit=function(e){const old=current,chat=chats.find(c=>c.id===old),n=chat?.messages.length||0;oldMessageSubmit.call(this,e);if(chat?.id==='mello-support'&&chat.messages.length>n){setTimeout(()=>{chat.messages.push({text:'Спасибо, обращение записано в демо-поддержку. В рабочей версии его увидит команда Mello.',time:timeNow(),mine:false,role:'Мелло'});save();openChat(chat.id)},800)}};
+  if(messageForm&&oldMessageSubmit)messageForm.onsubmit=function(e){
+    const old=current,chat=chats.find(c=>c.id===old),n=chat?.messages.length||0;
+    const input=$('#messageInput'),draft=String(input?.value||'').trim();
+    oldMessageSubmit.call(this,e);
+    if(!chat||chat.messages.length===n)return;
+    if(chat.id==='mello-support'){
+      setTimeout(()=>{chat.messages.push({text:'Спасибо! Это демо-чат: обращение пока не отправляется команде поддержки.',time:timeNow(),mine:false,role:'Мелло'});save();openChat(chat.id)},250);
+      return;
+    }
+    if(chat.id!=='mello-maxim')return;
+    const tone=account.melloMaximTone==='sharp'?'РЕЗКИЙ: говори прямо, энергично и с лёгкой иронией; не унижай собеседника, не оскорбляй и не угрожай.':'МЯГКИЙ: отвечай тепло, бережно и поддерживающе, без сюсюканья.';
+    const typing={text:'Максим печатает…',time:timeNow(),mine:false,role:'Максим',typing:true};
+    chat.messages.push(typing);save();openChat(chat.id);
+    const conversation=chat.messages.filter(m=>!m.typing&&m.text).slice(-14).map(m=>({role:m.mine?'user':'assistant',content:String(m.text).slice(0,5000)}));
+    if(conversation.length){const last=conversation[conversation.length-1];last.content=`[Стиль ответа: ${tone}]\n\n${last.content}`;}
+    fetch('https://wild-meadow-76d1.phujna56.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:conversation}),signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(45000):undefined})
+      .then(async response=>{const data=await response.json().catch(()=>({}));if(!response.ok||typeof data.reply!=='string')throw new Error(data.error||'Сервис временно недоступен');return data.reply.trim()})
+      .then(reply=>{chat.messages=chat.messages.filter(m=>m!==typing);chat.messages.push({text:reply,time:timeNow(),mine:false,role:'Максим'});save();if(current===chat.id)openChat(chat.id);})
+      .catch(()=>{chat.messages=chat.messages.filter(m=>m!==typing);chat.messages.push({text:'Сейчас не получилось подключиться к ИИ. Попробуй отправить ещё раз чуть позже.',time:timeNow(),mine:false,role:'Максим'});save();if(current===chat.id)openChat(chat.id);});
+  };
 
   const saveAdminRole=()=>{
     const chat=chats.find(c=>c.id===current);if(!chat||!['groups','channels'].includes(chat.type))return;

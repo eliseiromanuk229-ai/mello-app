@@ -1,5 +1,5 @@
-/* Local-only email/phone OTP and account switching for the Mello demo.
-   Replace the visible demo code with server-issued OTPs before production. */
+/* Local-only password sign-in and account switching for the Mello demo.
+   Passwords are PBKDF2 hashes stored in this browser only; this is not server authentication. */
 (() => {
   'use strict';
   const $ = selector => document.querySelector(selector);
@@ -14,8 +14,6 @@
   let records = parse('mello.accounts', []);
   let activeId = localStorage.getItem('mello.activeAccount') || '';
   let method = 'email';
-  let challenge = null;
-  let resendTimer = 0;
 
   function suggestUsername(displayName) {
     const tr = { а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'i',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'kh',ц:'ts',ч:'ch',ш:'sh',щ:'shch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya' };
@@ -35,12 +33,10 @@
   const legacy = parse('mello.account', null);
   if (legacy && (legacy.email || legacy.phone) && !records.some(r => r.email === legacy.email && r.phone === legacy.phone)) {
     const imported = { ...legacy, id: legacy.id || `acc_${Date.now()}`, chats: parse('mello.chats', []) };
-    delete imported.password;
     records.push(imported);
   }
   records = records.map(r => {
     if (!r.id) r.id = `acc_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
-    delete r.password;
     if (!Array.isArray(r.chats)) r.chats = [];
     return r;
   });
@@ -49,7 +45,8 @@
   function writeActive() {
     if (!account || !activeId) return;
     const idx = records.findIndex(r => r.id === activeId);
-    const next = { ...account, id: activeId, chats: Array.isArray(chats) ? chats : [] };
+    const previous = idx >= 0 ? records[idx] : {};
+    const next = { ...previous, ...account, id: activeId, chats: Array.isArray(chats) ? chats : [] };
     delete next.password;
     if (idx < 0) records.push(next); else records[idx] = next;
     localStorage.setItem('mello.accounts', JSON.stringify(records));
@@ -117,64 +114,40 @@
   function mode(register) {
     isRegister = !!register;
     $('#authTitle').textContent = register ? 'Создать аккаунт' : 'Войти в Mello';
-    $('#authIntro').textContent = register ? 'Подтверди email или номер телефона одноразовым кодом.' : 'Войди по одноразовому коду. Пароль здесь не используется.';
+    $('#authIntro').textContent = register ? 'Почта или номер нужны как логин. Код подтверждения пока не отправляется — придумай пароль из 8 или более цифр.' : 'Войди с помощью почты или номера и пароля.';
     nameField.classList.toggle('hidden', !register);
     $('#nameInput').required = register;
-    if (passwordLabel) passwordLabel.classList.add('hidden');
-    $('#passwordInput').required = false;
-    $('#passwordInput').disabled = true;
-    $('#authSubmit').textContent = 'Подтвердить код';
+    if (passwordLabel) passwordLabel.classList.remove('hidden');
+    $('#passwordInput').required = true;
+    $('#passwordInput').disabled = false;
+    $('#passwordInput').autocomplete = register ? 'new-password' : 'current-password';
+    $('#passwordInput').minLength = register ? 8 : 1;
+    $('#passwordInput').pattern = register ? '[0-9]{8,}' : '';
+    $('#passwordInput').inputMode = 'numeric';
+    $('#passwordInput').placeholder = register ? 'Минимум 8 цифр' : 'Введи свой пароль';
+    if (passwordLabel) passwordLabel.querySelector('span').textContent = register ? 'Пароль (только цифры)' : 'Пароль';
+    $('#authSubmit').textContent = register ? 'Создать аккаунт' : 'Войти';
+    $('#authSubmit').classList.remove('hidden');
     $('#switchAuth').textContent = register ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться';
     resetChallenge();
   }
   function resetChallenge() {
-    clearInterval(resendTimer); resendTimer = 0;
-    challenge = null;
-    $('#codeField').classList.add('hidden');
-    $('#codeInput').value = '';
-    $('#codeInput').required = false;
-    $('#authSubmit').classList.add('hidden');
-    $('#sendCodeButton').classList.remove('hidden');
-    $('#codeSentNote').classList.add('hidden');
-    $('#codeTimer').classList.add('hidden');
-    $('#resendCodeButton').classList.add('hidden');
+    const note = $('#demo-note');
+    if (note) note.textContent = 'Код на почту пока не приходит: почта используется только как логин. Пароль и аккаунт хранятся в этом браузере и не синхронизируются между устройствами.';
   }
 
-  function renderOtpCells() {
-    const input = $('#codeInput');
-    const digits = (input.value || '').replace(/\D/g, '').slice(0, 6);
-    if (input.value !== digits) input.value = digits;
-    document.querySelectorAll('[data-otp-digit]').forEach((cell, index) => {
-      cell.textContent = digits[index] || '';
-      cell.classList.toggle('filled', !!digits[index]);
-      cell.classList.toggle('current', index === Math.min(digits.length, 5));
-    });
+  const passwordRules = pass => /^[0-9]{8,}$/.test(pass);
+  const toHex = bytes => Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join('');
+  async function makePassword(pass, salt = crypto.getRandomValues(new Uint8Array(16))) {
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveBits']);
+    const hash = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' }, key, 256);
+    return { passwordSalt: toHex(salt), passwordHash: toHex(hash) };
   }
-
-  function startResendTimer() {
-    clearInterval(resendTimer);
-    let remaining = 59;
-    const timer = $('#codeTimer'), button = $('#resendCodeButton');
-    timer.classList.remove('hidden'); button.disabled = true; button.classList.remove('hidden');
-    const update = () => {
-      const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
-      const ss = String(remaining % 60).padStart(2, '0');
-      timer.textContent = remaining > 0 ? `Отправить код повторно через ${mm}:${ss}` : 'Можно отправить код повторно';
-      button.disabled = remaining > 0;
-      if (remaining <= 0) { clearInterval(resendTimer); resendTimer = 0; return; }
-      remaining--;
-    };
-    update(); resendTimer = setInterval(update, 1000);
-  }
-
-  function createDemoChallenge() {
-    challenge = { value: identityValue(), method, code: String(crypto.getRandomValues(new Uint32Array(1))[0] % 900000 + 100000), register: isRegister, createdAt: Date.now() };
-    $('#codeField').classList.remove('hidden');
-    $('#codeInput').required = true; $('#codeInput').value = ''; renderOtpCells();
-    $('#sendCodeButton').classList.add('hidden'); $('#authSubmit').classList.remove('hidden');
-    const destination = method === 'email' ? challenge.value : `номер ${challenge.value}`;
-    $('#codeSentNote').textContent = `Код отправлен на ${destination}. Это демонстрация: фактическая доставка пока не подключена.`;
-    $('#codeSentNote').classList.remove('hidden'); startResendTimer(); $('#codeInput').focus();
+  async function verifyPassword(pass, record) {
+    if (!record.passwordSalt || !record.passwordHash) return false;
+    const salt = Uint8Array.from(record.passwordSalt.match(/.{2}/g) || [], part => parseInt(part, 16));
+    const result = await makePassword(pass, salt);
+    return result.passwordHash === record.passwordHash;
   }
 
   // Replace the old email/password controls with email-or-phone code flow.
@@ -209,13 +182,10 @@
   $('#passwordInput').required = false;
   $('#passwordInput').disabled = true;
   identityLabel.insertAdjacentHTML('beforebegin', '<div class="auth-method-tabs"><button type="button" data-auth-method="email" class="selected">Email</button><button type="button" data-auth-method="phone">Номер телефона</button></div>');
-  identityLabel.insertAdjacentHTML('afterend', '<div id="codeField" class="field hidden"><span>Одноразовый код (не пароль)</span><div class="otp-display" aria-label="Шесть ячеек для кода">'+Array.from({length:6},(_,i)=>`<span data-otp-digit="${i}" class="otp-cell"></span>`).join('')+'<input id="codeInput" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" aria-label="Введите код из шести цифр"></div><small class="otp-help">Вставь код целиком — цифры распределятся по ячейкам.</small></div><div id="codeSentNote" class="demo-note hidden" role="status"></div><p id="codeTimer" class="otp-timer hidden" aria-live="polite"></p><button type="button" id="resendCodeButton" class="primary hidden" disabled>Отправить код повторно</button><button type="button" id="sendCodeButton" class="primary">Получить код</button>');
-  $('#codeSentNote').insertAdjacentHTML('afterend', '<label id="melloTermsAccept" class="mello-terms-accept hidden"><input type="checkbox" id="melloTermsCheck"><span>Я принимаю <button type="button" id="melloTermsOpen">Условия Mello</button> и <button type="button" id="melloRulesOpen">Правила сообщества</button>.</span></label>');
+  passwordLabel?.insertAdjacentHTML('afterend', '<label id="melloTermsAccept" class="mello-terms-accept hidden"><input type="checkbox" id="melloTermsCheck"><span>Я принимаю <button type="button" id="melloTermsOpen">Условия Mello</button> и <button type="button" id="melloRulesOpen">Правила сообщества</button>.</span></label>');
   const otpStyle = document.createElement('style');
-  otpStyle.textContent = '.otp-display{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}.otp-cell{display:grid;place-items:center;min-width:0;height:48px;border:1px solid #ffffff28;border-radius:13px;background:linear-gradient(145deg,#ffffff18,#ffffff08);box-shadow:inset 0 1px #ffffff24;color:#eafff1;font-size:21px;font-weight:700;transition:border-color .18s,box-shadow .18s,transform .18s}.otp-cell.filled{border-color:#83efb3aa;background:#63dc991c}.otp-cell.current{box-shadow:0 0 0 3px #5adc8c20,inset 0 1px #ffffff24}.otp-display input{position:absolute;inset:0;width:100%;height:100%;opacity:.015;cursor:text}.otp-help,.otp-timer{display:block;margin:7px 0 0;color:#9cb4a4;font-size:10px}.demo-note{margin:9px 0;padding:10px 12px;border:1px solid #ffffff18;border-radius:12px;background:#ffffff08;color:#bbd5c4;font-size:11px;line-height:1.5}.field select{width:100%;height:47px;border:1px solid #ffffff1b;border-radius:14px;background:#07110c;color:var(--text,#effcf4);padding:0 12px}.light-theme .otp-cell{background:linear-gradient(145deg,#ffffff,#eff8f1);color:#263f2e;border-color:#496c5033}.light-theme .otp-help,.light-theme .otp-timer{color:#617968}';
+  otpStyle.textContent = '.demo-note{margin:9px 0;padding:10px 12px;border:1px solid #ffffff18;border-radius:12px;background:#ffffff08;color:#bbd5c4;font-size:11px;line-height:1.5}.field select{width:100%;height:47px;border:1px solid #ffffff1b;border-radius:14px;background:#07110c;color:var(--text,#effcf4);padding:0 12px}';
   document.head.append(otpStyle);
-  $('#authSubmit').textContent = 'Подтвердить код';
-  $('#authSubmit').classList.add('hidden');
   document.querySelectorAll('[data-auth-method]').forEach(b => b.onclick = () => setMethod(b.dataset.authMethod));
   $('#switchAuth').onclick = () => mode(!isRegister);
   const syncMelloTerms = () => $('#melloTermsAccept')?.classList.toggle('hidden', !isRegister);
@@ -230,38 +200,33 @@
   }, true);
   mode(false);
 
-  $('#sendCodeButton').onclick = () => {
-    if (isRegister && !$('#melloTermsCheck')?.checked) { toast('Для регистрации сначала прими условия Mello'); return; }
-    const value = identityValue();
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const value = identityValue(), pass = $('#passwordInput').value;
     if (!validIdentity(value)) { toast(method === 'email' ? 'Введи корректный email' : 'Введи номер с кодом страны'); return; }
     if (isRegister) {
       if (!$('#nameInput').value.trim()) { toast('Сначала введи имя'); $('#nameInput').focus(); return; }
+      if (!passwordRules(pass)) { toast('Пароль должен состоять минимум из 8 цифр'); $('#passwordInput').focus(); return; }
       if (records.some(r => matchesRecord(r, value))) { toast('Этот email или номер уже добавлен. Переключись на вход.'); return; }
-    } else if (!records.some(r => matchesRecord(r, value))) {
-      toast('Аккаунт на этом устройстве не найден. Переключись на регистрацию.'); return;
-    }
-    createDemoChallenge();
-  };
-  $('#resendCodeButton').onclick = () => { if (!$('#resendCodeButton').disabled && challenge) createDemoChallenge(); };
-  $('#codeInput').addEventListener('input', renderOtpCells);
-  $('#codeInput').addEventListener('paste', () => setTimeout(renderOtpCells, 0));
-
-  form.onsubmit = e => {
-    e.preventDefault();
-    if (!challenge) { $('#sendCodeButton').click(); return; }
-    if (Date.now() - challenge.createdAt > 10 * 60 * 1000) { toast('Код истёк. Запроси новый'); resetChallenge(); return; }
-    if ($('#codeInput').value.trim() !== challenge.code) { toast('Код не совпадает'); $('#codeInput').focus(); return; }
-    let found = records.find(r => matchesRecord(r, challenge.value));
-    if (challenge.register) {
       const name = $('#nameInput').value.trim();
-      const created = { id: `acc_${Date.now()}_${Math.random().toString(36).slice(2,7)}`, name, username: suggestUsername(name), avatar: '', email: challenge.method === 'email' ? challenge.value : '', phone: challenge.method === 'phone' ? challenge.value : '', chats: [], demoVerified: true, termsAcceptedAt: Date.now(), melloStars: 10, melloCoins: 0, blockedUsers: [], unlockedBanners: [] };
+      const credentials = await makePassword(pass);
+      const created = { id: `acc_${Date.now()}_${Math.random().toString(36).slice(2,7)}`, name, username: suggestUsername(name), avatar: '', email: method === 'email' ? value : '', phone: method === 'phone' ? value : '', chats: [], ...credentials, termsAcceptedAt: Date.now(), melloStars: 10, melloCoins: 0, blockedUsers: [], unlockedBanners: [] };
       records.push(created); activeId = created.id; account = { ...created }; chats = [];
-    } else if (found) {
+    } else {
+      const found = records.find(r => matchesRecord(r, value));
+      if (!found) { toast('Аккаунт на этом устройстве не найден. Сначала зарегистрируйся.'); return; }
+      if (found.passwordHash) {
+        if (!(await verifyPassword(pass, found))) { toast('Неверный пароль'); $('#passwordInput').focus(); return; }
+      } else if (found.password) {
+        if (found.password !== pass) { toast('Неверный пароль'); $('#passwordInput').focus(); return; }
+        Object.assign(found, await makePassword(pass)); delete found.password;
+      } else {
+        toast('У этого демо-аккаунта ещё нет пароля. Переключись на регистрацию, чтобы создать аккаунт с паролем.'); return;
+      }
       activeId = found.id; account = { ...found }; chats = Array.isArray(found.chats) ? [...found.chats] : [];
-    } else { toast('Аккаунт не найден.'); return; }
+    }
     sessionStorage.removeItem('mello.forceLogin');
     writeActive();
-    resetChallenge();
     window.enter();
     toast(isRegister ? 'Демо-аккаунт создан' : 'Вход выполнен');
   };
@@ -342,5 +307,5 @@
   if (sessionStorage.getItem('mello.forceLogin') === '1') {
     $('#appView').classList.add('hidden'); $('#authView').classList.remove('hidden'); mode(false);
   } else if (account && !$('#appView').classList.contains('hidden')) refreshAccountView();
-  if ($('#demo-note')) $('#demo-note').textContent = 'Код не отображается на экране. Доставка и серверная проверка появятся после подключения сервера и почтового/SMS-сервиса.';
+  if ($('#demo-note')) $('#demo-note').textContent = 'Демо: пароли и чаты хранятся только в этом браузере. Для настоящего входа с разных устройств понадобится сервер.';
 })();

@@ -63,7 +63,7 @@
   const createBannerPicker = () => {
     const box = document.createElement('section');
     box.className = 'mello-banner-box';
-    box.innerHTML = `<div class="mello-banner-heading"><span>Баннер профиля</span><small>Картинка — 2100 монет · видео — 4200</small></div><div class="mello-banner-options"><button type="button" class="mello-banner-choice" data-banner="random" aria-label="Случайный смайлик">🙂</button>${banners.map(b => `<button type="button" class="mello-banner-choice" data-banner="${b.file}" aria-label="${b.title}" title="${b.title}">${b.video ? `<video data-video-src="${b.url}" muted loop playsinline preload="none"></video>` : b.url ? `<img src="${b.url}" alt="" loading="lazy">` : `<span style="display:block;width:100%;height:100%;background:${b.gradient}"></span>`}</button>`).join('')}</div>`;
+    box.innerHTML = `<div class="mello-banner-heading"><span>Баннер профиля</span><small>Все баннеры бесплатны в демо</small></div><div class="mello-banner-options"><button type="button" class="mello-banner-choice" data-banner="random" aria-label="Случайный смайлик">🙂</button>${banners.map(b => `<button type="button" class="mello-banner-choice" data-banner="${b.file}" aria-label="${b.title}" title="${b.title}">${b.video ? `<video data-video-src="${b.url}" muted loop playsinline preload="none"></video>` : b.url ? `<img src="${b.url}" alt="" loading="lazy">` : `<span style="display:block;width:100%;height:100%;background:${b.gradient}"></span>`}</button>`).join('')}</div>`;
     if ('IntersectionObserver' in window) {
       const observer = new IntersectionObserver(entries => entries.forEach(entry => {
         if (!entry.isIntersecting) return;
