@@ -60,10 +60,18 @@
     returnToChatList();
   },true);
   document.addEventListener('click',event=>{
-    const close=event.target.closest('#profileDrawer .drawer-close');
+    const target=event.target instanceof Element?event.target:event.target?.parentElement;
+    const close=target?.closest('#profileDrawer .drawer-close');
     if(!close)return;
     event.preventDefault();event.stopImmediatePropagation();
-    const drawer=close.closest('#profileDrawer');
+    const drawer=$('#profileDrawer');
+    drawer?.classList.remove('open');
+    drawer?.setAttribute('aria-hidden','true');
+  },true);
+  document.addEventListener('pointerdown',event=>{
+    const target=event.target instanceof Element?event.target:event.target?.parentElement;
+    if(!target?.closest('#profileDrawer .drawer-close'))return;
+    const drawer=$('#profileDrawer');
     drawer?.classList.remove('open');
     drawer?.setAttribute('aria-hidden','true');
   },true);
@@ -310,10 +318,10 @@
       const head=$('#conversationHead'),actions=head?.querySelector('.head-actions');
       let toneButton=head?.querySelector('[data-maxim-tone]');
       if(head&&!toneButton){toneButton=document.createElement('button');toneButton.type='button';toneButton.dataset.maximTone='1';toneButton.style.cssText='margin-left:auto;border:1px solid #ffffff20;border-radius:999px;padding:8px 12px;background:#ffffff0a;color:#eafff2;font:inherit;font-size:12px;cursor:pointer';if(actions)head.insertBefore(toneButton,actions);else head.appendChild(toneButton);}
-      if(toneButton)toneButton.textContent=`Тон: ${account.melloMaximTone==='sharp'?'Резкий':'Мягкий'}`;
+      if(toneButton)toneButton.textContent=`Тон: ${account.melloMaximTone==='sharp'?'Резкий + мат':'Мягкий'}`;
     }
   };
-  document.addEventListener('click',e=>{if(!e.target.closest('[data-maxim-tone]'))return;account.melloMaximTone=account.melloMaximTone==='sharp'?'soft':'sharp';save();window.openChat('mello-maxim');toast(`Максим отвечает ${account.melloMaximTone==='sharp'?'резко':'мягко'}`)});
+  document.addEventListener('click',e=>{const target=e.target instanceof Element?e.target:e.target?.parentElement;if(!target?.closest('[data-maxim-tone]'))return;account.melloMaximTone=account.melloMaximTone==='sharp'?'soft':'sharp';save();window.openChat('mello-maxim');toast(`Максим отвечает ${account.melloMaximTone==='sharp'?'резко, можно с матом':'мягко'}`)});
   $('#backBtn')?.addEventListener('click',()=>{lastChat=null;},true);
   window.addEventListener('popstate',()=>{if(current){lastChat=null;$('#backBtn')?.click();}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&current){lastChat=null;$('#backBtn')?.click();}});
@@ -344,7 +352,7 @@
       return;
     }
     if(chat.id!=='mello-maxim')return;
-    const tone=account.melloMaximTone==='sharp'?'РЕЗКИЙ: говори прямо, энергично и с лёгкой иронией; не унижай собеседника, не оскорбляй и не угрожай.':'МЯГКИЙ: отвечай тепло, бережно и поддерживающе, без сюсюканья.';
+    const tone=account.melloMaximTone==='sharp'?'РЕЗКИЙ ТОН: отвечай коротко, прямо и энергично, максимум 1–3 предложения. Допускается умеренный русский мат как разговорная эмоциональная окраска; не оскорбляй собеседника лично, не унижай и не угрожай.':'МЯГКИЙ ТОН: отвечай тепло и доброжелательно, тоже кратко — максимум 1–3 предложения, если пользователь не просит подробностей.';
     const typing={text:'Максим печатает…',time:timeNow(),mine:false,role:'Максим',typing:true};
     chat.messages.push(typing);save();openChat(chat.id);
     const conversation=chat.messages.filter(m=>!m.typing&&m.text).slice(-14).map(m=>({role:m.mine?'user':'assistant',content:String(m.text).slice(0,5000)}));
