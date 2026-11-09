@@ -1,16 +1,24 @@
 {
   "id": "./mello-prototype.html",
-  "name": "Mello — уютный мессенджер",
-  "short_name": "Mello",
-  "description": "Демо-прототип Mello в отдельном окне приложения",
+  "name": "Metto — уютный мессенджер",
+  "short_name": "Metto",
+  "description": "Metto — уютный мессенджер от X Protocol",
   "lang": "ru",
   "start_url": "./mello-prototype.html",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#09150f",
   "theme_color": "#09150f",
   "icons": [
-    { "src": "./mello-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    {
+      "src": "./mello-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }

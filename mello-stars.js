@@ -39,7 +39,7 @@
   const priorMarkup = window.messageMarkup || messageMarkup;
   window.messageMarkup = function (message) {
     if (message.kind === 'mello-gift') {
-      return `<div class="mello-gift-bubble ${message.mine ? 'mine' : ''}"><div class="mello-gift-bubble-main"><img src="${emojiUrl(message.emoji)}" alt="${esc(message.giftName)}"><span>${esc(message.giftName)}</span></div><small>Подарок от ${esc(message.sender || 'пользователя Mello')} · ${Number(message.cost) || 0} <img class="mello-stars-inline" src="${emojiUrl('⭐')}" alt="Stars"></small><time>${esc(message.time || '')}</time></div>`;
+      return `<div class="mello-gift-bubble ${message.mine ? 'mine' : ''}"><div class="mello-gift-bubble-main"><img src="${emojiUrl(message.emoji)}" alt="${esc(message.giftName)}"><span>${esc(message.giftName)}</span></div><small>Подарок от ${esc(message.sender || 'пользователя Metto')} · ${Number(message.cost) || 0} <img class="mello-stars-inline" src="${emojiUrl('⭐')}" alt="Stars"></small><time>${esc(message.time || '')}</time></div>`;
     }
     return priorMarkup(message);
   };
@@ -48,7 +48,7 @@
     const host = document.querySelector('#modalHost');
     if (!host || !account) return;
     const balance = storedStars();
-    host.innerHTML = `<div class="modal-bg" id="melloGiftBg"><section class="mello-stars-panel"><div class="modal-top"><h2>Подарки Mello</h2><button type="button" class="close" data-gift-close aria-label="Закрыть">×</button></div><div class="mello-stars-balance"><div><strong>Твои Stars</strong><small>Баланс этого демо-аккаунта</small></div><span class="mello-stars-badge"><img src="${emojiUrl('⭐')}" alt=""> <span data-stars-count>${infiniteWallet()?'∞':balance}</span></span></div><div class="mello-gift-grid">${gifts.map(gift => `<button type="button" class="mello-gift-choice" data-gift-id="${gift.id}" ${!infiniteWallet()&&balance < gift.stars ? 'disabled' : ''}><img src="${emojiUrl(gift.emoji)}" alt="${gift.name}"><span><b>${gift.name}</b><small>${gift.stars} <img class="mello-stars-inline" src="${emojiUrl('⭐')}" alt="Stars"></small></span></button>`).join('')}</div><p class="mello-stars-note">Подарок спишет звёзды с твоего демо-баланса и появится в чате. Покупки и реальные платежи пока не подключены.</p></section></div>`;
+    host.innerHTML = `<div class="modal-bg" id="melloGiftBg"><section class="mello-stars-panel"><div class="modal-top"><h2>Подарки Metto</h2><button type="button" class="close" data-gift-close aria-label="Закрыть">×</button></div><div class="mello-stars-balance"><div><strong>Твои Stars</strong><small>Баланс этого демо-аккаунта</small></div><span class="mello-stars-badge"><img src="${emojiUrl('⭐')}" alt=""> <span data-stars-count>${infiniteWallet()?'∞':balance}</span></span></div><div class="mello-gift-grid">${gifts.map(gift => `<button type="button" class="mello-gift-choice" data-gift-id="${gift.id}" ${!infiniteWallet()&&balance < gift.stars ? 'disabled' : ''}><img src="${emojiUrl(gift.emoji)}" alt="${gift.name}"><span><b>${gift.name}</b><small>${gift.stars} <img class="mello-stars-inline" src="${emojiUrl('⭐')}" alt="Stars"></small></span></button>`).join('')}</div><p class="mello-stars-note">Подарок спишет звёзды с твоего демо-баланса и появится в чате. Покупки и реальные платежи пока не подключены.</p></section></div>`;
     const close = () => host.replaceChildren();
     host.querySelector('[data-gift-close]').onclick = close;
     host.querySelector('#melloGiftBg').onclick = e => { if (e.target.id === 'melloGiftBg') close(); };
@@ -78,5 +78,5 @@
     openGiftChooser({ personId });
   });
 
-  window.MelloStars = { gifts, openGiftChooser, balance: storedStars };
+  window.MettoStars = { gifts, openGiftChooser, balance: storedStars };
 })();

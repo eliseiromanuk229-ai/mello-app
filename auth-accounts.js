@@ -1,4 +1,4 @@
-/* Local-only password sign-in and account switching for the Mello demo.
+/* Local-only password sign-in and account switching for the Metto demo.
    Passwords are PBKDF2 hashes stored in this browser only; this is not server authentication. */
 (() => {
   'use strict';
@@ -26,7 +26,7 @@
     }
     return `@mello${Date.now().toString().slice(-8)}`;
   }
-  window.suggestMelloUsername = suggestUsername;
+  window.suggestMettoUsername = suggestUsername;
 
   // Import the single-account 0.8 demo once, then keep each account's chats apart.
   if (!Array.isArray(records)) records = [];
@@ -77,10 +77,10 @@
     sessionStorage.removeItem('mello.forceLogin');
     $('#authView')?.classList.add('hidden');
     $('#appView')?.classList.remove('hidden');
-    const welcome = $('#welcomeName'); if (welcome) welcome.textContent = account.name || 'Mello';
+    const welcome = $('#welcomeName'); if (welcome) welcome.textContent = account.name || 'Metto';
     window.updateSelfAvatar?.();
     window.renderChats?.();
-    window.consumeMelloInvite?.();
+    window.consumeMettoInvite?.();
   };
 
   function identityValue() {
@@ -114,7 +114,7 @@
   }
   function mode(register) {
     isRegister = !!register;
-    $('#authTitle').textContent = register ? 'Создать аккаунт' : 'Войти в Mello';
+    $('#authTitle').textContent = register ? 'Создать аккаунт' : 'Войти в Metto';
     $('#authIntro').textContent = register ? 'Почта или номер нужны как логин. Создай постоянный пароль только из цифр, минимум 8.' : 'Войди с помощью почты или номера и постоянного цифрового пароля.';
     nameField.classList.toggle('hidden', !register);
     $('#nameInput').required = register;
@@ -151,6 +151,17 @@
     return result.passwordHash === record.passwordHash;
   }
 
+  window.changeMettoPassword = async (currentPassword, nextPassword) => {
+    if (!passwordRules(nextPassword)) return 'Новый пароль должен состоять минимум из 8 цифр.';
+    const record = records.find(item => item.id === activeId);
+    if (!record) return 'Аккаунт не найден на этом устройстве.';
+    if (!(await verifyPassword(currentPassword, record))) return 'Текущий пароль неверный.';
+    Object.assign(record, await makePassword(nextPassword));
+    if (account && account.id === activeId) Object.assign(account, { passwordSalt: record.passwordSalt, passwordHash: record.passwordHash });
+    writeActive();
+    return true;
+  };
+
   // Use a persistent numeric password with either an email or phone login.
   const identityLabel = identityInput.closest('label');
   identityLabel.querySelector('span').id = 'authIdentityLabel';
@@ -183,20 +194,20 @@
   $('#passwordInput').required = false;
   $('#passwordInput').disabled = true;
   identityLabel.insertAdjacentHTML('beforebegin', '<div class="auth-method-tabs"><button type="button" data-auth-method="email" class="selected">Email</button><button type="button" data-auth-method="phone">Номер телефона</button></div>');
-  passwordLabel?.insertAdjacentHTML('afterend', '<label id="melloTermsAccept" class="mello-terms-accept hidden"><input type="checkbox" id="melloTermsCheck"><span>Я принимаю <button type="button" id="melloTermsOpen">Условия Mello</button> и <button type="button" id="melloRulesOpen">Правила сообщества</button>.</span></label>');
+  passwordLabel?.insertAdjacentHTML('afterend', '<label id="melloTermsAccept" class="mello-terms-accept hidden"><input type="checkbox" id="melloTermsCheck"><span>Я принимаю <button type="button" id="melloTermsOpen">Условия Metto</button> и <button type="button" id="melloRulesOpen">Правила сообщества</button>.</span></label>');
   const otpStyle = document.createElement('style');
   otpStyle.textContent = '.demo-note{margin:9px 0;padding:10px 12px;border:1px solid #ffffff18;border-radius:12px;background:#ffffff08;color:#bbd5c4;font-size:11px;line-height:1.5}.field select{width:100%;height:47px;border:1px solid #ffffff1b;border-radius:14px;background:#07110c;color:var(--text,#effcf4);padding:0 12px}';
   document.head.append(otpStyle);
   document.querySelectorAll('[data-auth-method]').forEach(b => b.onclick = () => setMethod(b.dataset.authMethod));
   $('#switchAuth').onclick = () => mode(!isRegister);
-  const syncMelloTerms = () => $('#melloTermsAccept')?.classList.toggle('hidden', !isRegister);
+  const syncMettoTerms = () => $('#melloTermsAccept')?.classList.toggle('hidden', !isRegister);
   const switchAuthButton = $('#switchAuth');
-  switchAuthButton.addEventListener('click', () => setTimeout(syncMelloTerms, 0));
-  syncMelloTerms();
+  switchAuthButton.addEventListener('click', () => setTimeout(syncMettoTerms, 0));
+  syncMettoTerms();
   form.addEventListener('submit', e => {
     if (isRegister && !$('#melloTermsCheck')?.checked) {
       e.preventDefault(); e.stopImmediatePropagation();
-      toast('Для регистрации прими условия и правила Mello');
+      toast('Для регистрации прими условия и правила Metto');
     }
   }, true);
   mode(false);
@@ -248,7 +259,7 @@
 
   function refreshAccountView() {
     if (!account) return;
-    const greeting = $('#welcomeName'); if (greeting) greeting.textContent = account.name || 'Mello';
+    const greeting = $('#welcomeName'); if (greeting) greeting.textContent = account.name || 'Metto';
     window.updateSelfAvatar?.();
     const activeLine = $('#accountSwitcherActive');
     if (activeLine) activeLine.textContent = account.name || account.email || account.phone || 'Текущий аккаунт';

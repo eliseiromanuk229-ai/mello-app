@@ -150,7 +150,7 @@
     let digits = '';
     const spec = JSON.parse(localStorage.getItem(pinStorageKey()) || 'null');
     if (!spec) { done?.(); return; }
-    showModal(`<section class="mello-pin-screen"><div class="mello-pin-top"><span>🔒 Mello</span><button type="button" data-pin-cancel>Войти другим аккаунтом</button></div><img class="mello-pin-mascot" src="${emojiUrl('🙈')}" alt="Mello"><h2>Введи код-пароль</h2><p>Код остаётся на этом устройстве</p><div class="mello-pin-dots">${Array.from({length:spec.length},(_,i)=>`<i class="mello-pin-dot" data-pin-dot="${i}"></i>`).join('')}</div><div class="mello-pin-error" id="melloPinError"></div><div class="mello-keypad">${[1,2,3,4,5,6,7,8,9,'bio',0,'del'].map((n,i)=>n==='bio'?'<button type="button" data-biometric aria-label="Биометрия">⌁<small>БИОМЕТРИЯ</small></button>':n==='del'?'<button type="button" data-pin-del>⌫</button>':`<button type="button" data-pin-key="${n}">${n}<small>${['','ABC','DEF','GHI','JKL','MNO','PQRS','TUV','WXYZ'][Number(n)]||''}</small></button>`).join('')}</div><div class="mello-pin-bottom"><button type="button" data-pin-help>Забыли код?</button><span></span></div></section>`, e => {
+    showModal(`<section class="mello-pin-screen"><div class="mello-pin-top"><span>🔒 Metto</span><button type="button" data-pin-cancel>Войти другим аккаунтом</button></div><img class="mello-pin-mascot" src="${emojiUrl('🙈')}" alt="Metto"><h2>Введи код-пароль</h2><p>Код остаётся на этом устройстве</p><div class="mello-pin-dots">${Array.from({length:spec.length},(_,i)=>`<i class="mello-pin-dot" data-pin-dot="${i}"></i>`).join('')}</div><div class="mello-pin-error" id="melloPinError"></div><div class="mello-keypad">${[1,2,3,4,5,6,7,8,9,'bio',0,'del'].map((n,i)=>n==='bio'?'<button type="button" data-biometric aria-label="Биометрия">⌁<small>БИОМЕТРИЯ</small></button>':n==='del'?'<button type="button" data-pin-del>⌫</button>':`<button type="button" data-pin-key="${n}">${n}<small>${['','ABC','DEF','GHI','JKL','MNO','PQRS','TUV','WXYZ'][Number(n)]||''}</small></button>`).join('')}</div><div class="mello-pin-bottom"><button type="button" data-pin-help>Забыли код?</button><span></span></div></section>`, e => {
       const btn = e.target.closest('[data-pin-cancel],[data-pin-key],[data-pin-del],[data-biometric],[data-pin-help]'); if (!btn) return;
       if (btn.hasAttribute('data-pin-cancel')) { $('#modalHost').replaceChildren();$('#appView').classList.add('hidden');$('#authView').classList.remove('hidden');sessionStorage.setItem('mello.forceLogin','1');return; }
       if (btn.hasAttribute('data-pin-help')) { $('#melloPinError').textContent = 'Сброс кода потребует выйти и снова войти в аккаунт.'; return; }
@@ -173,12 +173,12 @@
   async function enableBiometric() {
     if (!window.isSecureContext || !navigator.credentials?.create || !window.PublicKeyCredential) throw new Error('unsupported');
     const challenge=crypto.getRandomValues(new Uint8Array(32)), userId=crypto.getRandomValues(new Uint8Array(16));
-    const credential=await navigator.credentials.create({ publicKey: { challenge, rp:{name:'Mello',id:location.hostname}, user:{id:userId,name:account.email||account.phone||'mello-user',displayName:account.name||'Mello'}, pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}], authenticatorSelection:{authenticatorAttachment:'platform',residentKey:'preferred',userVerification:'required'}, timeout:60000, attestation:'none' } });
+    const credential=await navigator.credentials.create({ publicKey: { challenge, rp:{name:'Metto',id:location.hostname}, user:{id:userId,name:account.email||account.phone||'mello-user',displayName:account.name||'Metto'}, pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}], authenticatorSelection:{authenticatorAttachment:'platform',residentKey:'preferred',userVerification:'required'}, timeout:60000, attestation:'none' } });
     if (!credential) throw new Error('cancelled');
     localStorage.setItem(`mello.bio:${accountKey()}`, btoa(String.fromCharCode(...new Uint8Array(credential.rawId))));
   }
   function setPinDialog() {
-    if (!window.isSecureContext || !crypto?.subtle) { toast('Код-пароль доступен после открытия Mello по HTTPS или localhost.'); return; }
+    if (!window.isSecureContext || !crypto?.subtle) { toast('Код-пароль доступен после открытия Metto по HTTPS или localhost.'); return; }
     showModal(`<section class="mello-dialog"><div class="modal-top"><div><h2>Защита приложения</h2><p>Создай код из 4–6 цифр. Это локальный замок прототипа.</p></div><button class="close" data-v1-close>×</button></div><label class="field"><span>Новый код-пароль</span><input id="pinSetOne" type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" placeholder="4–6 цифр"></label><label class="field"><span>Повтори код</span><input id="pinSetTwo" type="password" inputmode="numeric" maxlength="6" placeholder="Повтори код"></label><div class="mello-quick-actions"><button type="button" data-pin-save>Сохранить код</button><button type="button" data-pin-remove>Отключить код</button><button type="button" data-bio-enable>Включить биометрию</button></div><p>Биометрия использует системный ключ устройства в поддерживаемом браузере. Для защиты аккаунтов на разных устройствах понадобится сервер.</p></section>`, e => {
       if (e.target.closest('[data-pin-save]')) {
         const a=$('#pinSetOne').value,b=$('#pinSetTwo').value;
@@ -191,7 +191,7 @@
   }
   function termsDialog(kind) {
     const isRules = kind === 'rules';
-    const title = isRules ? 'Правила сообщества Mello' : 'Условия использования Mello';
+    const title = isRules ? 'Правила сообщества Metto' : 'Условия использования Metto';
     const paragraphs = isRules ? [
       'Общайся уважительно. Не преследуй людей, не угрожай им и не выдавай себя за другого человека.',
       'Не рассылай спам, мошеннические предложения, вредоносные ссылки или нежелательные массовые сообщения.',
@@ -199,21 +199,21 @@
       'Не отправляй материалы, нарушающие закон или права других людей. Пользуйся жалобой, если видишь нарушение.',
       'Администраторы сообществ могут задавать правила своих каналов и групп. Владелец отвечает за назначение модераторов.'
     ] : [
-      'Mello — сервис для общения. Создавая аккаунт, ты отвечаешь за сохранность своего устройства и доступ к нему.',
+      'Metto — сервис для общения. Создавая аккаунт, ты отвечаешь за сохранность своего устройства и доступ к нему.',
       'Передаваемые сообщения и файлы доступны участникам соответствующего чата. Не отправляй то, чем не готов делиться с его участниками.',
       'Демо-версия хранит данные в браузере на текущем устройстве. Она не синхронизирует их между людьми и устройствами.',
-      'Не используй Mello для нарушения закона, прав других людей или этих правил. Мы можем ограничивать функции аккаунта при злоупотреблениях.',
+      'Не используй Metto для нарушения закона, прав других людей или этих правил. Мы можем ограничивать функции аккаунта при злоупотреблениях.',
       'Платежи, рекламные награды и отдельные функции в прототипе могут быть только демонстрацией и не являются реальной покупкой.'
     ];
-    showModal(`<section class="mello-dialog"><div class="modal-top"><h2>${title}</h2><button class="close" data-v1-close>×</button></div><p>Версия документа 1.0 · собственные условия Mello</p><ol>${paragraphs.map(p=>`<li>${escape(p)}</li>`).join('')}</ol><button class="primary" data-v1-close>Понятно</button></section>`);
+    showModal(`<section class="mello-dialog"><div class="modal-top"><h2>${title}</h2><button class="close" data-v1-close>×</button></div><p>Версия документа 1.0 · собственные условия Metto</p><ol>${paragraphs.map(p=>`<li>${escape(p)}</li>`).join('')}</ol><button class="primary" data-v1-close>Понятно</button></section>`);
   }
 
   function ensureSystemChats() {
     if (!account || !Array.isArray(chats)) return;
     if (!chats.some(chat => chat.id === 'mello-saved')) chats.unshift({ id:'mello-saved', personId:'mello-saved', type:'personal', title:'Избранное', messages:[] });
-    if (!chats.some(chat => chat.id === 'mello-support')) chats.push({ id:'mello-support', personId:'mello-support', type:'personal', title:'Поддержка Mello', ownerId:'mello-creator', messages:[{ text:'Привет! Здесь можно оставить идею, вопрос или сообщение о проблеме.', time:timeNow(), mine:false, role:'Бот' }] });
-    if (!chats.some(chat => chat.id === 'mello-maxim')) chats.push({ id:'mello-maxim', personId:'mello-maxim', type:'personal', title:'Помощь от ИИ', messages:[{ text:'Привет! Я помощник Mello на основе ИИ. Выбери в шапке мягкий или резкий стиль и напиши мне.', time:timeNow(), mine:false, role:'Помощь от ИИ' }] });
-    const aiHelpChat=chats.find(chat=>chat.id==='mello-maxim');if(aiHelpChat){aiHelpChat.title='Помощь от ИИ';aiHelpChat.messages=aiHelpChat.messages.map(message=>message.role==='Максим'?{...message,role:'Помощь от ИИ',text:message.text?.includes('я Максим')?'Привет! Я помощник Mello на основе ИИ. Выбери в шапке чата мягкий или резкий стиль и напиши мне.':message.text}:message)}
+    if (!chats.some(chat => chat.id === 'mello-support')) chats.push({ id:'mello-support', personId:'mello-support', type:'personal', title:'Поддержка Metto', ownerId:'mello-creator', messages:[{ text:'Привет! Здесь можно оставить идею, вопрос или сообщение о проблеме.', time:timeNow(), mine:false, role:'Бот' }] });
+    if (!chats.some(chat => chat.id === 'mello-maxim')) chats.push({ id:'mello-maxim', personId:'mello-maxim', type:'personal', title:'Помощь от ИИ', messages:[{ text:'Привет! Я помощник Metto на основе ИИ. Выбери в шапке мягкий или резкий стиль и напиши мне.', time:timeNow(), mine:false, role:'Помощь от ИИ' }] });
+    const aiHelpChat=chats.find(chat=>chat.id==='mello-maxim');if(aiHelpChat){aiHelpChat.title='Помощь от ИИ';aiHelpChat.messages=aiHelpChat.messages.map(message=>message.role==='Максим'?{...message,role:'Помощь от ИИ',text:message.text?.includes('я Максим')?'Привет! Я помощник Metto на основе ИИ. Выбери в шапке чата мягкий или резкий стиль и напиши мне.':message.text}:message)}
     if (!Array.isArray(account.blockedUsers)) account.blockedUsers=[];
     if (!Array.isArray(account.unlockedBanners)) account.unlockedBanners=[];
     if (!Number.isFinite(account.melloCoins)) account.melloCoins=0;
@@ -221,9 +221,9 @@
     save();
   }
   const previousPerson = window.person || person;
-  window.person = id => {const p=id==='mello-saved'?{id,name:'Избранное',username:'Только для тебя',emoji:'🔖',a:'#78e4a7',b:'#1c6441'}:id==='mello-support'?{id,name:'Поддержка Mello',username:'@mello_support',emoji:'💬',a:'#70e8ab',b:'#18714b'}:id==='mello-maxim'?{id,name:'Помощь от ИИ',username:'ИИ-помощник Mello',emoji:'🤖',a:'#95c9ff',b:'#5352ad'}:previousPerson(id);if(['mello-saved','mello-support','mello-maxim'].includes(id))return p;const presence=id==='p_masha'?{state:'online',label:'В сети'}:id==='p_ilya'?{state:'recent',label:'был(а) недавно'}:{state:'last',label:`был(а) в ${timeNow()}`};return {...p,presence};};
+  window.person = id => {const p=id==='mello-saved'?{id,name:'Избранное',username:'Только для тебя',emoji:'🔖',a:'#78e4a7',b:'#1c6441'}:id==='mello-support'?{id,name:'Поддержка Metto',username:'@mello_support',emoji:'💬',a:'#70e8ab',b:'#18714b'}:id==='mello-maxim'?{id,name:'Помощь от ИИ',username:'ИИ-помощник Metto',emoji:'🤖',a:'#95c9ff',b:'#5352ad'}:previousPerson(id);if(['mello-saved','mello-support','mello-maxim'].includes(id))return p;const presence=id==='p_masha'?{state:'online',label:'В сети'}:id==='p_ilya'?{state:'recent',label:'был(а) недавно'}:{state:'last',label:`был(а) в ${timeNow()}`};return {...p,presence};};
   const previousRenderChats = window.renderChats || renderChats;
-  window.renderChats = function(){ensureSystemChats();previousRenderChats();const list=$('#chatList');if(!list)return;const blocked=new Set(account?.blockedUsers||[]);for(const row of list.querySelectorAll('[data-chat]')){const c=chats.find(x=>x.id===row.dataset.chat),p=row.querySelector('.preview'),avatar=row.querySelector('.avatar'),profile=window.person(c?.personId);if(c?.type==='personal'&&avatar&&profile?.presence){avatar.style.position='relative';if(!avatar.querySelector('.mello-presence-dot'))avatar.insertAdjacentHTML('beforeend','<i class="mello-presence-dot"></i>');const dot=avatar.querySelector('.mello-presence-dot');dot.classList.toggle('online',profile.presence.state==='online');dot.title=profile.presence.label;}if(c?.id==='mello-saved'){row.querySelector('.avatar').innerHTML=`<img src="${emojiUrl('🔖')}" alt="">`;row.querySelector('.title').textContent='Избранное';}if(c?.id==='mello-support'){row.querySelector('.avatar').innerHTML=`<img src="${emojiUrl('💬')}" alt="">`;row.querySelector('.title').textContent='Поддержка Mello';row.querySelector('.title')?.insertAdjacentHTML('beforebegin','<span class="mello-support-badge">MELLO</span>');}if(p&&c?.id==='mello-support')p.textContent='Написать в поддержку';if(p&&blocked.has(c?.personId))p.textContent='Пользователь в чёрном списке';}};
+  window.renderChats = function(){ensureSystemChats();previousRenderChats();const list=$('#chatList');if(!list)return;const blocked=new Set(account?.blockedUsers||[]);for(const row of list.querySelectorAll('[data-chat]')){const c=chats.find(x=>x.id===row.dataset.chat),p=row.querySelector('.preview'),avatar=row.querySelector('.avatar'),profile=window.person(c?.personId);if(c?.type==='personal'&&avatar&&profile?.presence){avatar.style.position='relative';if(!avatar.querySelector('.mello-presence-dot'))avatar.insertAdjacentHTML('beforeend','<i class="mello-presence-dot"></i>');const dot=avatar.querySelector('.mello-presence-dot');dot.classList.toggle('online',profile.presence.state==='online');dot.title=profile.presence.label;}if(c?.id==='mello-saved'){row.querySelector('.avatar').innerHTML=`<img src="${emojiUrl('🔖')}" alt="">`;row.querySelector('.title').textContent='Избранное';}if(c?.id==='mello-support'){row.querySelector('.avatar').innerHTML=`<img src="${emojiUrl('💬')}" alt="">`;row.querySelector('.title').textContent='Поддержка Metto';row.querySelector('.title')?.insertAdjacentHTML('beforebegin','<span class="mello-support-badge">METTO</span>');}if(p&&c?.id==='mello-support')p.textContent='Написать в поддержку';if(p&&blocked.has(c?.personId))p.textContent='Пользователь в чёрном списке';}};
 
   const priorEnter = window.enter || enter;
   window.enter = function(){
@@ -235,18 +235,18 @@
   if (submit) {
     const oldSubmit = submit.onsubmit;
     if (oldSubmit) submit.onsubmit = function(e){ oldSubmit.call(this,e); };
-    submit.addEventListener('submit', e=>{if(isRegister&&!$('#melloTermsCheck')?.checked){e.preventDefault();e.stopImmediatePropagation();toast('Сначала прими условия Mello');}},true);
+    submit.addEventListener('submit', e=>{if(isRegister&&!$('#melloTermsCheck')?.checked){e.preventDefault();e.stopImmediatePropagation();toast('Сначала прими условия Metto');}},true);
     $('#melloTermsOpen')?.addEventListener('click',()=>termsDialog('terms'));
     $('#melloRulesOpen')?.addEventListener('click',()=>termsDialog('rules'));
   }
   const usernameObserver=new MutationObserver(()=>{
     const input=$('#profileUsername'),form=$('#profileForm');if(!input||!form||input.dataset.usernameReady)return;
     input.dataset.usernameReady='1';
-    if(!input.value.trim())input.value=window.suggestMelloUsername?.(account?.name)||'@mello_user';
+    if(!input.value.trim())input.value=window.suggestMettoUsername?.(account?.name)||'@mello_user';
     const tools=document.createElement('div');tools.className='mello-username-tools';tools.innerHTML='<button type="button" data-new-username>Сгенерировать другой вариант</button>';input.closest('.field')?.after(tools);
-    tools.querySelector('button').onclick=()=>{input.value=window.suggestMelloUsername?.(account?.name)||`@mello${Date.now().toString().slice(-5)}`;input.focus()};
+    tools.querySelector('button').onclick=()=>{input.value=window.suggestMettoUsername?.(account?.name)||`@mello${Date.now().toString().slice(-5)}`;input.focus()};
     form.addEventListener('submit',e=>{
-      if(!input.value.trim())input.value=window.suggestMelloUsername?.(account?.name)||'';
+      if(!input.value.trim())input.value=window.suggestMettoUsername?.(account?.name)||'';
       const normalized='@'+input.value.trim().replace(/^@+/,'').toLowerCase();
       let records=[];try{records=JSON.parse(localStorage.getItem('mello.accounts')||'[]')}catch{}
       if(records.some(r=>r.id!==account?.id&&r.username?.toLowerCase()===normalized)){e.preventDefault();e.stopImmediatePropagation();toast('Этот юзернейм уже занят. Сгенерируй другой или введи свой.');return}
@@ -255,7 +255,7 @@
   });
   if($('#modalHost'))usernameObserver.observe($('#modalHost'),{childList:true,subtree:true});
   const authForm=$('#authForm');
-  const mascot=document.createElement('div');mascot.className='mello-mascot';mascot.innerHTML=`<img src="${emojiUrl('🧸')}" alt=""><span>Привет! Mello бережёт твой личный круг.</span>`;
+  const mascot=document.createElement('div');mascot.className='mello-mascot';mascot.innerHTML=`<img src="${emojiUrl('🧸')}" alt=""><span>Привет! Metto бережёт твой личный круг.</span>`;
   authForm?.querySelector('.auth-method-tabs')?.after(mascot);
   $('#emailInput')?.addEventListener('focus',()=>{mascot.classList.remove('closed');mascot.querySelector('img').src=emojiUrl('🧸')});
   $('#codeInput')?.addEventListener('focus',()=>{mascot.classList.add('closed');mascot.querySelector('img').src=emojiUrl('🙈')});
@@ -264,7 +264,7 @@
   function attachTools() {
     const content=$('#settingsContent');if(!content||content.querySelector('.mello-v1-tools'))return;
     const panel=document.createElement('section');panel.className='mello-v1-tools';
-    panel.innerHTML=`<h3>Mello · сообщество и защита</h3><p class="setting-help">Проект X Protocol · Украина</p><div class="mello-v1-grid"><button data-v1-action="security"><img src="${emojiUrl('🔒')}" alt="">Код и биометрия</button><button data-v1-action="style"><img src="${emojiUrl('🧊')}" alt="">Стиль сообществ</button><button data-v1-action="saved"><img src="${emojiUrl('🔖')}" alt="">Избранное</button><button data-v1-action="support"><img src="${emojiUrl('💬')}" alt="">Поддержка</button><button data-v1-action="banner-shop"><img src="${emojiUrl('🖼️')}" alt="">Магазин баннеров</button></div><p class="setting-help">Баланс: <b><span data-v1-stars>${hasUnlimitedWallet()?'∞':account?.melloStars??10}</span> Stars</b> · <b><span data-v1-coins>${hasUnlimitedWallet()?'∞':account?.melloCoins??0}</span> <img class="mello-gift-emoji" src="${emojiUrl('🪙')}" alt="монет"></b>. Реальные платежи здесь не подключены.</p>`;
+    panel.innerHTML=`<h3>Metto · сообщество и защита</h3><p class="setting-help">Проект X Protocol · Украина</p><div class="mello-v1-grid"><button data-v1-action="security"><img src="${emojiUrl('🔒')}" alt="">Код и биометрия</button><button data-v1-action="style"><img src="${emojiUrl('🧊')}" alt="">Стиль сообществ</button><button data-v1-action="saved"><img src="${emojiUrl('🔖')}" alt="">Избранное</button><button data-v1-action="support"><img src="${emojiUrl('💬')}" alt="">Поддержка</button><button data-v1-action="banner-shop"><img src="${emojiUrl('🖼️')}" alt="">Магазин баннеров</button></div><p class="setting-help">Баланс: <b><span data-v1-stars>${hasUnlimitedWallet()?'∞':account?.melloStars??10}</span> Stars</b> · <b><span data-v1-coins>${hasUnlimitedWallet()?'∞':account?.melloCoins??0}</span> <img class="mello-gift-emoji" src="${emojiUrl('🪙')}" alt="монет"></b>. Реальные платежи здесь не подключены.</p>`;
     content.append(panel);
   }
   function refreshBalance(){const stars=$('[data-v1-stars]'),coins=$('[data-v1-coins]');if(stars)stars.textContent=hasUnlimitedWallet()?'∞':account?.melloStars??10;if(coins)coins.textContent=hasUnlimitedWallet()?'∞':account?.melloCoins??0;}
@@ -280,7 +280,7 @@
     const icons=servers.map(server=>`<button class="mello-server-icon ${server.id===selectedId?'active':''}" title="${escape(server.name)}" data-select-server="${escape(server.id)}">${escape(server.icon||'✦')}</button>`).join('');
     const list=servers.map(server=>`<button class="mello-server-row ${server.id===selectedId?'active':''}" data-select-server="${escape(server.id)}"><span>${escape(server.icon||'✦')}</span>${escape(server.name)}</button>`).join('');
     const channelRows=selected?(selected.channels||[]).map(channel=>`<button class="mello-server-channel" data-server-channel="${escape(channel.id)}" data-server-id="${escape(selected.id)}"><span>${channel.type==='voice'?'🔊':'#'}</span>${escape(channel.name)}</button>`).join(''):'<p>Создай сервер, чтобы собрать друзей и каналы в одном месте.</p>';
-    const bg=showModal(`<section class="mello-server-hub"><button class="close" data-v1-close aria-label="Закрыть">×</button><div class="mello-server-icons">${icons}<button class="mello-server-icon" data-create-server title="Создать сервер">＋</button></div><div class="mello-server-list"><h2>Твои серверы</h2>${list||'<p>Пока пусто</p>'}<button class="setting-action" data-create-server style="width:100%;margin-top:10px">＋ Создать сервер</button></div><div class="mello-server-details">${selected?`<h2>${escape(selected.icon||'✦')} ${escape(selected.name)}</h2><p>Текстовые и голосовые комнаты Mello. Пока данные сохраняются только в этом браузере.</p><div class="mello-server-section"><h3>Каналы</h3>${channelRows}<div class="mello-server-tools"><button class="setting-action" data-add-text>＋ Текстовый канал</button><button class="setting-action" data-add-voice>＋ Голосовой канал</button></div></div><p style="margin-top:18px">Звонки пока показывают проверку микрофона и камеры на этом устройстве; удалённого подключения участников ещё нет.</p>`:'<h2>Серверы Mello</h2><p>Создай пространство для друзей, чатов и голосовых комнат.</p>'}</div></section>`,async e=>{
+    const bg=showModal(`<section class="mello-server-hub"><button class="close" data-v1-close aria-label="Закрыть">×</button><div class="mello-server-icons">${icons}<button class="mello-server-icon" data-create-server title="Создать сервер">＋</button></div><div class="mello-server-list"><h2>Твои серверы</h2>${list||'<p>Пока пусто</p>'}<button class="setting-action" data-create-server style="width:100%;margin-top:10px">＋ Создать сервер</button></div><div class="mello-server-details">${selected?`<h2>${escape(selected.icon||'✦')} ${escape(selected.name)}</h2><p>Текстовые и голосовые комнаты Metto. Пока данные сохраняются только в этом браузере.</p><div class="mello-server-section"><h3>Каналы</h3>${channelRows}<div class="mello-server-tools"><button class="setting-action" data-add-text>＋ Текстовый канал</button><button class="setting-action" data-add-voice>＋ Голосовой канал</button></div></div><p style="margin-top:18px">Звонки пока показывают проверку микрофона и камеры на этом устройстве; удалённого подключения участников ещё нет.</p>`:'<h2>Серверы Metto</h2><p>Создай пространство для друзей, чатов и голосовых комнат.</p>'}</div></section>`,async e=>{
       if(e.target.closest('[data-create-server]')){const name=prompt('Название сервера');if(!name?.trim())return;const id=`srv_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;const server={id,name:name.trim().slice(0,48),icon:'✦',channels:[{id:`${id}_general`,name:'общий',type:'text'},{id:`${id}_voice`,name:'голосовой',type:'voice'}]};servers.push(server);save();openServerHub(id);return;}
       if(e.target.closest('[data-select-server]')){openServerHub(e.target.closest('[data-select-server]').dataset.selectServer);return;}
       if(e.target.closest('[data-add-text]')||e.target.closest('[data-add-voice]')){if(!selected)return;const voice=!!e.target.closest('[data-add-voice]'),name=prompt(voice?'Название голосового канала':'Название текстового канала');if(!name?.trim())return;selected.channels.push({id:`${selected.id}_${Date.now()}`,name:name.trim().replace(/^#+|^🔊\s*/,'').slice(0,36),type:voice?'voice':'text'});save();openServerHub(selected.id);return;}
@@ -288,9 +288,9 @@
     });
     return bg;
   }
-  document.addEventListener('click',e=>{const target=e.target instanceof Element?e.target:e.target?.parentElement;const nav=target?.closest('.rail-btn[title="Звонки"]');if(!nav)return;e.preventDefault();e.stopImmediatePropagation();document.querySelectorAll('.rail-btn').forEach(button=>button.classList.toggle('active',button===nav));showDemoCall('Звонки Mello');},true);
-  document.addEventListener('click',e=>{const target=e.target instanceof Element?e.target:e.target?.parentElement;const btn=target?.closest('#conversationHead .call-start');if(btn){e.preventDefault();e.stopImmediatePropagation();const chat=chats.find(item=>item.id===current);showDemoCall(chat?.title||'Чат Mello');}},true);
-  function showDemoCall(room){activeCallStream=null;const bg=showModal(`<section class="mello-call-card"><h2>${escape(room)}</h2><div class="mello-call-avatar">🎙️</div><p class="mello-call-status">Звонок Mello · локальный демонстрационный режим<br>Собеседники пока не подключаются: для групповых звонков нужен сервер.</p><video class="mello-call-preview" autoplay muted playsinline hidden></video><div class="mello-call-actions"><button type="button" data-call-mic>🎙️ Микрофон</button><button type="button" data-call-camera>📷 Камера</button><button type="button" class="end" data-v1-close>Завершить</button></div></section>`,async e=>{const status=bg?.querySelector('.mello-call-status'),video=bg?.querySelector('.mello-call-preview');if(e.target.closest('[data-call-mic]')){try{activeCallStream=activeCallStream||await navigator.mediaDevices.getUserMedia({audio:true});if(status)status.innerHTML='Микрофон разрешён и работает на этом устройстве.<br>Удалённые участники пока не подключаются.';e.target.textContent='🎙️ Микрофон вкл.'}catch{if(status)status.textContent='Не удалось включить микрофон. Проверь разрешение браузера.'}}if(e.target.closest('[data-call-camera]')){try{const camera=await navigator.mediaDevices.getUserMedia({video:true});activeCallStream=activeCallStream?new MediaStream([...activeCallStream.getTracks(),...camera.getVideoTracks()]):camera;if(video){video.srcObject=activeCallStream;video.hidden=false}if(status)status.textContent='Камера показывает только твоё локальное видео; другие участники не подключаются.'}catch{if(status)status.textContent='Не удалось включить камеру. Проверь разрешение браузера.'}}});bg?.addEventListener('click',e=>{if(e.target===bg){activeCallStream?.getTracks().forEach(track=>track.stop());activeCallStream=null;}});}
+  document.addEventListener('click',e=>{const target=e.target instanceof Element?e.target:e.target?.parentElement;const nav=target?.closest('.rail-btn[title="Звонки"]');if(!nav)return;e.preventDefault();e.stopImmediatePropagation();document.querySelectorAll('.rail-btn').forEach(button=>button.classList.toggle('active',button===nav));showDemoCall('Звонки Metto');},true);
+  document.addEventListener('click',e=>{const target=e.target instanceof Element?e.target:e.target?.parentElement;const btn=target?.closest('#conversationHead .call-start');if(btn){e.preventDefault();e.stopImmediatePropagation();const chat=chats.find(item=>item.id===current);showDemoCall(chat?.title||'Чат Metto');}},true);
+  function showDemoCall(room){activeCallStream=null;const bg=showModal(`<section class="mello-call-card"><h2>${escape(room)}</h2><div class="mello-call-avatar">🎙️</div><p class="mello-call-status">Звонок Metto · локальный демонстрационный режим<br>Собеседники пока не подключаются: для групповых звонков нужен сервер.</p><video class="mello-call-preview" autoplay muted playsinline hidden></video><div class="mello-call-actions"><button type="button" data-call-mic>🎙️ Микрофон</button><button type="button" data-call-camera>📷 Камера</button><button type="button" class="end" data-v1-close>Завершить</button></div></section>`,async e=>{const status=bg?.querySelector('.mello-call-status'),video=bg?.querySelector('.mello-call-preview');if(e.target.closest('[data-call-mic]')){try{activeCallStream=activeCallStream||await navigator.mediaDevices.getUserMedia({audio:true});if(status)status.innerHTML='Микрофон разрешён и работает на этом устройстве.<br>Удалённые участники пока не подключаются.';e.target.textContent='🎙️ Микрофон вкл.'}catch{if(status)status.textContent='Не удалось включить микрофон. Проверь разрешение браузера.'}}if(e.target.closest('[data-call-camera]')){try{const camera=await navigator.mediaDevices.getUserMedia({video:true});activeCallStream=activeCallStream?new MediaStream([...activeCallStream.getTracks(),...camera.getVideoTracks()]):camera;if(video){video.srcObject=activeCallStream;video.hidden=false}if(status)status.textContent='Камера показывает только твоё локальное видео; другие участники не подключаются.'}catch{if(status)status.textContent='Не удалось включить камеру. Проверь разрешение браузера.'}}});bg?.addEventListener('click',e=>{if(e.target===bg){activeCallStream?.getTracks().forEach(track=>track.stop());activeCallStream=null;}});}
   document.addEventListener('click',e=>{
     const nav=e.target.closest('.rail-btn[title="Чаты"],.rail-btn[title="Серверы"]');if(!nav)return;
     e.preventDefault();e.stopImmediatePropagation();if($('#appView')?.classList.contains('chat-open'))returnToChatList();if(nav.title==='Серверы'){document.querySelectorAll('.rail-btn').forEach(button=>button.classList.toggle('active',button===nav));openServerHub();return;}filter='all';
@@ -316,7 +316,7 @@
   function openSpecialChat(id){ensureSystemChats();const chat=chats.find(c=>c.id===id);if(chat)openChat(chat.id)}
 
   function openEarnings(){
-    const panel=showModal(`<section class="mello-dialog"><div class="modal-top"><div><h2>Заработок и награды</h2><p>Это демонстрационный баланс Mello, не реальные деньги.</p></div><button type="button" class="close" data-v1-close aria-label="Закрыть">×</button></div><p>Баланс: <b>${hasUnlimitedWallet()?'∞':account?.melloCoins??0} монет</b> · <b>${hasUnlimitedWallet()?'∞':account?.melloStars??10} Stars</b></p><p>Настоящая реклама, рекламная сеть и вывод средств пока не подключены. Демо-награда начисляет внутренние баллы для макета.</p><button type="button" class="primary" data-earn-demo>Показать демо-награду · +300 монет · +1 Star</button><p class="setting-help">X Protocol — название проекта; компания пока не зарегистрирована.</p></section>`,e=>{if(e.target.closest('[data-earn-demo]')){panel?.remove();watchDemoAd()}});
+    const panel=showModal(`<section class="mello-dialog"><div class="modal-top"><div><h2>Заработок и награды</h2><p>Это демонстрационный баланс Metto, не реальные деньги.</p></div><button type="button" class="close" data-v1-close aria-label="Закрыть">×</button></div><p>Баланс: <b>${hasUnlimitedWallet()?'∞':account?.melloCoins??0} монет</b> · <b>${hasUnlimitedWallet()?'∞':account?.melloStars??10} Stars</b></p><p>Настоящая реклама, рекламная сеть и вывод средств пока не подключены. Демо-награда начисляет внутренние баллы для макета.</p><button type="button" class="primary" data-earn-demo>Показать демо-награду · +300 монет · +1 Star</button><p class="setting-help">X Protocol — название проекта; компания пока не зарегистрирована.</p></section>`,e=>{if(e.target.closest('[data-earn-demo]')){panel?.remove();watchDemoAd()}});
     return panel;
   }
 
@@ -336,7 +336,7 @@
     if('IntersectionObserver' in window){const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(!entry.isIntersecting)return;const video=entry.target.querySelector('video[data-video-src]');if(video&&!video.src){video.src=video.dataset.videoSrc;video.play().catch(()=>{})}observer.unobserve(entry.target)}),{root:panel,rootMargin:'100px'});videos.forEach(card=>observer.observe(card))}
     else videos.forEach(card=>{const video=card.querySelector('video');video.src=video.dataset.videoSrc;video.play().catch(()=>{})});
     return panel;
-  }  window.openMelloBannerShop=openBannerShop;
+  }  window.openMettoBannerShop=openBannerShop;
 
   // One-click block controls on other users' profile cards.
   document.addEventListener('click',e=>{
@@ -353,7 +353,7 @@
     originalOpenChat(id);
     $('#chatHead [data-maxim-tone]')?.remove();
     const chat=chats.find(c=>c.id===id);
-    if(chat?.id==='mello-support'){$('#conversationHead small')?.insertAdjacentHTML('afterbegin','<span class="mello-support-badge">MELLO</span>');}
+    if(chat?.id==='mello-support'){$('#conversationHead small')?.insertAdjacentHTML('afterbegin','<span class="mello-support-badge">METTO</span>');}
     if(chat?.id==='mello-saved'){$('#conversationHead small')?.insertAdjacentHTML('afterbegin','<span class="mello-support-badge">ТОЛЬКО ТЫ</span>');}
     if(chat?.id==='mello-maxim'){
       const head=$('#chatHead'),actions=head?.querySelector('.head-actions');
@@ -431,7 +431,7 @@
     $('#profileDrawer .drawer-members')?.querySelectorAll('.drawer-member').forEach((row,index)=>{const id=ids[index-1];if(id&&chat.adminIds?.includes(id)&&!row.querySelector('.mello-admin-label'))row.querySelector('b')?.insertAdjacentHTML('afterend',' <span class="mello-owner-label mello-admin-label">Админ</span>')});
   },0));
 
-  // Reward account initialization for newly created Mello profiles.
+  // Reward account initialization for newly created Metto profiles.
   if(account&&!Number.isFinite(account.melloStars)){account.melloStars=10;account.melloCoins=0;save();}
   if(account){ensureSystemChats();if(!$('#appView').classList.contains('hidden'))window.renderChats();}
   if(localStorage.getItem('mello.communityStyle')==='1')document.body.classList.add('community-mode');

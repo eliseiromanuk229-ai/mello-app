@@ -8,6 +8,8 @@
     ['banner-16.jpg', 'Welcome'], ['banner-17.jpg', 'Котёнок'],
     ['liquid-18', 'Изумрудная волна'], ['liquid-19', 'Северное сияние'], ['liquid-20', 'Стеклянный лес']
   ].map(([file, title], index) => ({ file, title, url: file.endsWith('.jpg') ? `./assets/banners/${file}` : '', gradient: [`radial-gradient(ellipse at 24% 30%,#78f1c788,transparent 42%),linear-gradient(135deg,#071b14,#1a6545,#18213a)`, `radial-gradient(ellipse at 70% 22%,#9ccaff99,transparent 42%),linear-gradient(135deg,#071923,#18495b,#252846)`, `radial-gradient(ellipse at 30% 80%,#76e6ac88,transparent 45%),linear-gradient(135deg,#102d22,#334832,#0f1821)`][index-17] || '' }));
+  for (let i = 18; i <= 40; i++) imageBanners.push({ file: `banner-${String(i).padStart(2, '0')}.jpg`, title: `Баннер ${i - 17}`, url: `./assets/banners/banner-${String(i).padStart(2, '0')}.jpg` });
+  imageBanners.push({ file: 'liquid-41', title: 'Metto · Aurora', url: '', gradient: 'radial-gradient(ellipse at 70% 15%,#ab8bff99,transparent 42%),linear-gradient(135deg,#07131c,#185247,#1b2c57)' });
   const videoBanners = Array.from({ length: 21 }, (_, index) => ({ file: `video-${String(index + 1).padStart(2, '0')}.mp4`, title: `Анимация ${index + 1}`, video: true, url: `./assets/banner-videos/video-${String(index + 1).padStart(2, '0')}.mp4` }));
   const banners = [...imageBanners, ...videoBanners];
   const randomFaces = ['😊', '😎', '🥰', '🤩', '😄', '🙂', '😺', '😉', '😁', '😇', '😋', '🤗'];
@@ -77,7 +79,7 @@
     }
     const refresh = () => box.querySelectorAll('[data-banner]').forEach(button => button.classList.toggle('selected', button.dataset.banner === (savedBanner() || 'random')));
     box.addEventListener('click', e => {
-      if (e.target.closest('[data-open-banner-shop]')) { window.openMelloBannerShop?.(); return; }
+      if (e.target.closest('[data-open-banner-shop]')) { window.openMettoBannerShop?.(); return; }
       const choice = e.target.closest('[data-banner]');
       if (!choice) return;
       try { choice.dataset.banner === 'random' ? localStorage.removeItem(key()) : localStorage.setItem(key(), choice.dataset.banner); } catch {}
@@ -125,7 +127,7 @@
     const presenceMarkup = presence ? `<span class="mello-person-presence ${presence.state}"><i></i>${esc(presence.label)}</span>` : '';
     const inviteLink = createInviteLink(chat);
     const otherActions = `${canGift ? `<button type="button" class="mello-gift-open" data-gift-open data-person-id="${esc(personId)}"><img src="https://www.emojiall.com/images/120/telegram/1f381.gif" alt="">Подарить</button>` : ''}${inviteLink ? '<button type="button" data-copy-invite>🔗 Скопировать ссылку</button>' : ''}<button type="button" data-message>Написать</button>${entityType === 'person' && personId && personId !== 'mello-support' ? `<button type="button" data-block-user="${esc(personId)}">${isBlocked ? 'Разблокировать' : 'Заблокировать'}</button>` : ''}`;
-    host.innerHTML = `<div class="modal-bg mello-profile-bg"><section class="mello-profile-card"><div class="mello-profile-top"><button type="button" aria-label="Закрыть">×</button></div>${coverMarkup(banner)}<div class="mello-profile-summary"><div class="mello-profile-avatar">${avatar || `<span>${emoji || '🙂'}</span>`}</div><div><h2>${esc(name || 'Пользователь Mello')}</h2><p>${esc(username || '@mello_user')}${own ? ' · это ты' : ''}</p>${presenceMarkup}</div></div>${own ? `<div class="mello-profile-stars"><span class="mello-stars-badge"><img src="https://www.emojiall.com/images/120/telegram/2b50.gif" alt=""> ${starBalance} Mello Stars</span></div>` : ''}<div class="mello-profile-actions">${own ? '<button type="button" data-edit-profile>Изменить профиль</button><button type="button" data-accounts>Аккаунты</button><button type="button" data-logout>Выйти</button>' : otherActions}<button type="button" data-close-profile>Закрыть</button></div></section></div>`;
+    host.innerHTML = `<div class="modal-bg mello-profile-bg"><section class="mello-profile-card"><div class="mello-profile-top"><button type="button" aria-label="Закрыть">×</button></div>${coverMarkup(banner)}<div class="mello-profile-summary"><div class="mello-profile-avatar">${avatar || `<span>${emoji || '🙂'}</span>`}</div><div><h2>${esc(name || 'Пользователь Metto')}</h2><p>${esc(username || '@mello_user')}${own ? ' · это ты' : ''}</p>${presenceMarkup}</div></div>${own ? `<div class="mello-profile-stars"><span class="mello-stars-badge"><img src="https://www.emojiall.com/images/120/telegram/2b50.gif" alt=""> ${starBalance} Metto Stars</span></div>` : ''}<div class="mello-profile-actions">${own ? '<button type="button" data-edit-profile>Изменить профиль</button><button type="button" data-accounts>Аккаунты</button><button type="button" data-logout>Выйти</button>' : otherActions}<button type="button" data-close-profile>Закрыть</button></div></section></div>`;
     const close = () => host.replaceChildren();
     host.querySelector('[aria-label="Закрыть"]').onclick = close;
     host.querySelector('[data-close-profile]').onclick = close;
@@ -147,7 +149,7 @@
       return invite;
     } catch { return null; }
   };
-  window.consumeMelloInvite = function consumeMelloInvite() {
+  window.consumeMettoInvite = function consumeMettoInvite() {
     const match = location.hash.match(/^#invite=([A-Za-z0-9_-]+)$/);
     const token = match?.[1] || sessionStorage.getItem('mello.pendingInvite');
     if (!token || !account) {
@@ -172,7 +174,7 @@
     toast('Открыта демо-копия. Переписка не синхронизируется между устройствами.');
     return true;
   };
-  if (account) window.consumeMelloInvite();
+  if (account) window.consumeMettoInvite();
 
   const showOwnProfileCard = () => showPersonCard({ name: account?.name, username: account?.username, avatar: account?.avatar ? `<img src="${account.avatar}" alt="">` : '', own: true });
   document.querySelector('#railProfile')?.addEventListener('click', e => { e.preventDefault(); e.stopImmediatePropagation(); showOwnProfileCard(); }, true);
@@ -197,7 +199,7 @@
         showPersonCard({ name: chat.title || p.name, username: p.username, emoji: chat.type === 'groups' ? '👥' : p.emoji, selection: p.profileBanner, personId: p.id, giftable: chat.type === 'personal' && chat.id !== 'mello-support', entityType: ['groups','channels'].includes(chat.type) ? chat.type : 'person' });
         return;
       }
-      const title = member.querySelector('b')?.textContent || 'Пользователь Mello';
+      const title = member.querySelector('b')?.textContent || 'Пользователь Metto';
       const username = member.querySelector('small')?.textContent || '@mello_user';
       const own = username.includes('это ты');
       if (own) { e.preventDefault(); e.stopImmediatePropagation(); showPersonCard({ name: account?.name, username: account?.username, avatar: avatar.querySelector('img')?.outerHTML, own: true }); return; }
