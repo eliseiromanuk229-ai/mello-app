@@ -40,10 +40,10 @@
     .mello-banner-box{margin:10px 0 14px;padding:12px;border:1px solid #ffffff19;border-radius:18px;background:#ffffff08}
     .mello-banner-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px;font-size:12px;font-weight:700}
     .mello-banner-heading small{font-size:10px;font-weight:400;color:#a9c6b5}
-    .mello-banner-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+    .mello-banner-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;max-height:min(38dvh,330px);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:thin;scrollbar-color:#74d99a55 transparent;padding:2px 4px 4px 2px;scroll-behavior:smooth}
     .mello-banner-choice{position:relative;min-width:0;aspect-ratio:1.45;border:1px solid #ffffff20;border-radius:10px;overflow:hidden;padding:0;background:#12231b;cursor:pointer;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
     .mello-banner-choice img,.mello-banner-choice video{width:100%;height:100%;object-fit:cover;display:block}
-    .mello-banner-choice:hover{transform:scale(1.04)}
+    .mello-banner-choice:hover{transform:scale(1.025)}
     .mello-banner-choice.selected{border:2px solid #79e5a9;box-shadow:0 0 0 2px #65d89738}
     .mello-banner-choice[data-banner="random"]{display:grid;place-items:center;color:white;font-size:26px;background:radial-gradient(circle,#38845d,#172c22)}
     .mello-banner-choice[data-banner="random"]::after{content:'Смайлик';position:absolute;bottom:3px;left:0;right:0;font-size:8px;color:#e2ffec}
@@ -57,7 +57,7 @@
     .mello-profile-summary h2{margin:0;font-size:18px}.mello-profile-summary p{margin:4px 0 0;color:#9db9a7;font-size:12px}
     .mello-profile-actions{display:flex;gap:8px;margin:12px 4px 3px}.mello-profile-actions button{flex:1;border:1px solid #ffffff20;border-radius:12px;padding:11px;background:#ffffff0b;color:inherit;cursor:pointer}.mello-profile-actions button:first-child{background:#77e7a9;color:#082416;font-weight:700}
     .mello-profile-top{display:flex;justify-content:flex-end;height:0;position:relative;z-index:1}.mello-profile-top button{margin:7px 6px 0 0;width:32px;height:32px;border:0;border-radius:50%;background:#07130e9c;color:#fff;font-size:20px;cursor:pointer}
-    @media(max-width:520px){.mello-profile-cover{height:128px}.mello-banner-options{grid-template-columns:repeat(3,minmax(0,1fr))}.mello-profile-card{padding:10px}}
+    @media(max-width:520px){.mello-profile-cover{height:128px}.mello-banner-options{grid-template-columns:repeat(3,minmax(0,1fr));max-height:38dvh;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}.mello-profile-card{padding:10px}}
     @media(prefers-reduced-motion:reduce){.mello-cover-face{animation:none}}
   `;
   document.head.append(style);
