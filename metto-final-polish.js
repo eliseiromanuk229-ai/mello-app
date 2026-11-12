@@ -19,6 +19,16 @@
     .metto-search-input{width:100%;height:43px;padding:0 12px;border:1px solid #ffffff20;border-radius:12px;background:#07130f;color:#effcf4;outline:none}
     .metto-search-input:focus{border-color:#8fffc080;box-shadow:0 0 0 3px #52d98e18}
     .metto-search-status{min-height:36px;margin:2px 0;color:#9bb0a2;font-size:11px;line-height:1.5}
+    .metto-add-contact{width:100%;min-height:42px;border:1px solid #91f8b855;border-radius:13px;background:linear-gradient(110deg,#a4ffd31c,#7de9a512);color:#dffff0;font-weight:650;font-size:12px;box-shadow:inset 0 1px #ffffff19;transition:transform .18s ease,background .2s ease,box-shadow .2s ease}
+    .metto-add-contact:hover{transform:translateY(-1px);background:#a4ffd32a;box-shadow:0 8px 24px #56d98920}
+    .metto-local-notice{padding:9px 10px;border-radius:11px;background:#ffffff08;color:#94aa9b;font-size:10px;line-height:1.45}
+    .chat-list .row{transition:transform .22s cubic-bezier(.2,.8,.2,1),background-color .24s ease,border-color .24s ease}
+    @media(hover:hover){.chat-list .row:hover{transform:translateX(3px)}}
+    .modal-bg .modal{animation:metto-sheet-in .32s cubic-bezier(.2,.85,.25,1.12) both}
+    @keyframes metto-sheet-in{from{opacity:0;transform:translateY(24px) scale(.97);filter:blur(3px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+    .bubble{transition:transform .18s ease,box-shadow .2s ease}
+    @media(hover:hover){.bubble:hover{box-shadow:0 5px 18px #0002}}
+    @media(max-width:600px){.modal-bg{align-items:end;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}.modal-bg .modal{width:100%;max-height:88dvh;border-radius:24px 24px 18px 18px}}
     .metto-avatar-change{display:flex;align-items:center;gap:12px;margin:8px 0 16px}
     .metto-avatar-preview{width:72px;height:72px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:linear-gradient(140deg,#70e8ab,#18714b);box-shadow:0 0 0 3px #ffffff18,0 8px 24px #0005;font-size:24px}
     .metto-avatar-preview img{width:100%;height:100%;object-fit:cover}
@@ -30,7 +40,7 @@
     .metto-edit-presets button:hover{transform:translateY(-2px);background:#9bffd018;border-color:#9bffd044}
     .metto-edit-presets button span{font-size:18px}
     .metto-edit-emoji{display:flex;align-items:center;gap:7px;margin:8px 2px 12px;color:#b8cdbd;font-size:11px}
-    @media(prefers-reduced-motion:reduce){.tabs .tab,.metto-tab-indicator,.metto-search-modes button{transition:none}}
+    @media(prefers-reduced-motion:reduce){.tabs .tab,.metto-tab-indicator,.metto-search-modes button,.chat-list .row,.bubble{transition:none}.modal-bg .modal{animation:none}}
   `;
   document.head.append(style);
 
@@ -53,7 +63,7 @@
   // Replace the sample directory with search over actual, non-bot contacts already present locally.
   window.showPeople = function showPeopleMetto() {
     const host = $('#modalHost'); if (!host) return;
-    host.innerHTML = `<div class="modal-bg" id="mettoPeopleBg"><section class="modal"><div class="modal-top"><h2>Найти людей</h2><button class="close" type="button" id="mettoPeopleClose" aria-label="Закрыть">×</button></div><p class="setting-help">Поиск по нику, номеру телефона или почте. Сейчас доступны только контакты, уже сохранённые в этом браузере.</p><div class="metto-people-search"><div class="metto-search-modes" role="group" aria-label="Тип поиска"><button type="button" aria-pressed="true" data-search-kind="username">Юзернейм</button><button type="button" aria-pressed="false" data-search-kind="phone">Телефон</button><button type="button" aria-pressed="false" data-search-kind="email">Почта</button></div><input class="metto-search-input" id="mettoPeopleQuery" autocomplete="off" placeholder="Например, @username" aria-label="Поиск контакта"><div class="metto-search-status" id="mettoPeopleStatus" aria-live="polite">Между разными устройствами поиск заработает после подключения общей серверной базы Метто.</div><div id="mettoPeopleResults"></div></div></section></div>`;
+    host.innerHTML = `<div class="modal-bg" id="mettoPeopleBg"><section class="modal"><div class="modal-top"><h2>Найти или добавить</h2><button class="close" type="button" id="mettoPeopleClose" aria-label="Закрыть">×</button></div><p class="setting-help">Введи юзернейм, номер или почту. Новый контакт сохранится в этом браузере.</p><div class="metto-people-search"><div class="metto-search-modes" role="group" aria-label="Тип поиска"><button type="button" aria-pressed="true" data-search-kind="username">Юзернейм</button><button type="button" aria-pressed="false" data-search-kind="phone">Телефон</button><button type="button" aria-pressed="false" data-search-kind="email">Почта</button></div><input class="metto-search-input" id="mettoPeopleQuery" autocomplete="off" placeholder="Например, @username" aria-label="Поиск контакта"><div class="metto-search-status" id="mettoPeopleStatus" aria-live="polite">Поиск других пользователей и доставка сообщений между устройствами пока не подключены.</div><div id="mettoPeopleResults"></div><div class="metto-local-notice">Локальный контакт виден только здесь. Чтобы друг получил сообщение на своём устройстве, Метто нужен сервер аккаунтов и чатов.</div></div></section></div>`;
     const close = () => host.replaceChildren();
     $('#mettoPeopleClose').onclick = close;
     $('#mettoPeopleBg').onclick = event => { if (event.target.id === 'mettoPeopleBg') close(); };
@@ -62,7 +72,7 @@
     const update = () => {
       const value = query.value.trim().toLocaleLowerCase('ru');
       results.replaceChildren();
-      if (!value) { status.textContent = 'Между разными устройствами поиск заработает после подключения общей серверной базы Метто.'; return; }
+      if (!value) { status.textContent = 'Поиск других пользователей и доставка сообщений между устройствами пока не подключены.'; return; }
       const chatsForSearch = (chats || []).filter(chat => chat.type === 'personal' && !demoIds.has(chat.personId) && !chat.isBot && !String(chat.personId || '').startsWith('bot_'));
       const matches = chatsForSearch.filter(chat => {
         const p = person(chat.personId) || {};
@@ -70,12 +80,23 @@
         return String(field || '').toLocaleLowerCase('ru').includes(value);
       });
       if (!matches.length) {
-        status.textContent = 'Совпадений среди сохранённых контактов нет. Поиск аккаунтов Метто на других устройствах пока не подключён.';
+        status.textContent = 'Контакт не найден среди уже открытых чатов. Можно добавить его локально.';
+        if (isValidContact(kind, value)) {
+          const add = document.createElement('button'); add.type = 'button'; add.className = 'metto-add-contact'; add.textContent = `＋ Добавить ${kind === 'username' ? `@${value.replace(/^@+/, '')}` : value}`;
+          add.onclick = () => addLocalContact(kind, value);
+          results.append(add);
+        } else if (kind !== 'username' || value.replace(/^@+/, '').length < 3) {
+          status.textContent = kind === 'email' ? 'Проверь адрес почты, например name@example.com.' : kind === 'phone' ? 'Введи номер с кодом страны, например +380… (от 7 до 15 цифр).' : 'Юзернейм должен содержать 3–20 латинских букв, цифр или подчёркиваний.';
+        }
         return;
       }
       status.textContent = `Найдено локальных контактов: ${matches.length}`;
       results.innerHTML = matches.map(chat => { const p = person(chat.personId) || {}; return `<button type="button" class="person" data-local-chat="${esc(chat.id)}" style="width:100%;text-align:left;background:transparent;color:inherit"><span class="avatar" style="--a:${esc(p.a||'#71c8a0')};--b:${esc(p.b||'#286348')}">${esc(p.emoji||'🙂')}</span><span><b>${esc(p.name||chat.title||'Контакт')}</b><small>${esc(p.username||p.phone||p.email||'Сохранённый контакт')}</small></span><span class="setting-action">Открыть</span></button>`; }).join('');
       results.querySelectorAll('[data-local-chat]').forEach(button => button.onclick = () => { close(); openChat(button.dataset.localChat); });
+      if (isValidContact(kind, value)) {
+        const add = document.createElement('button'); add.type = 'button'; add.className = 'metto-add-contact'; add.style.marginTop = '8px'; add.textContent = '＋ Добавить новый контакт';
+        add.onclick = () => addLocalContact(kind, value); results.append(add);
+      }
     };
     host.querySelectorAll('[data-search-kind]').forEach(button => button.onclick = () => {
       kind = button.dataset.searchKind;
@@ -85,6 +106,42 @@
     });
     query.oninput = update; query.addEventListener('keydown', event => { if (event.key === 'Escape') close(); });
     window.MettoAnimations?.refresh(host); query.focus();
+
+    function normalizedContact(type, raw) {
+      const value = String(raw).trim();
+      if (type === 'username') return `@${value.replace(/^@+/, '').toLocaleLowerCase('en')}`;
+      if (type === 'email') return value.toLocaleLowerCase('en');
+      const digits = value.replace(/[^0-9+]/g, ''); return digits.startsWith('+') ? `+${digits.slice(1).replace(/\+/g,'')}` : digits.replace(/\+/g,'');
+    }
+    function isValidContact(type, raw) {
+      const value = normalizedContact(type, raw);
+      if (type === 'username') return /^@[a-z0-9_]{3,20}$/.test(value);
+      if (type === 'email') return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+      return /^\+?[0-9]{7,15}$/.test(value);
+    }
+    function addLocalContact(type, raw) {
+      const identity = normalizedContact(type, raw);
+      if (!isValidContact(type, raw)) { status.textContent = 'Проверь введённые данные и попробуй ещё раз.'; return; }
+      const duplicate = (chats || []).find(chat => chat.localOnly && chat.contact?.[type] === identity);
+      if (duplicate) { close(); filter = 'all'; document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.filter === 'all')); search = ''; if (searchBox) searchBox.value = ''; renderChats(); openChat(duplicate.id); toast('Этот контакт уже добавлен'); return; }
+      const contact = { [type]: identity };
+      const id = `local_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+      const label = type === 'username' ? identity : identity;
+      const chat = { id, personId: id, type:'personal', title:label, contact, localOnly:true, messages:[] };
+      chats.unshift(chat); save(); close(); filter = 'all'; document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.filter === 'all'));
+      search = ''; if (searchBox) searchBox.value = ''; renderChats(); openChat(id);
+      toast('Контакт добавлен на это устройство; сообщения пока не доставляются другому аккаунту');
+    }
+  };
+
+  const previousOpenChat = window.openChat;
+  if (previousOpenChat) window.openChat = function openMettoChat(id) {
+    previousOpenChat(id);
+    const chat = (chats || []).find(item => item.id === id);
+    if (chat?.localOnly) {
+      const details = $('#conversationHead small');
+      if (details) details.textContent = `${chat.contact?.username || chat.contact?.phone || chat.contact?.email || 'контакт'} · только на этом устройстве`;
+    }
   };
 
   // Keep sidebar filtering limited to existing chats; never append the old fake directory or auto-open a match.
