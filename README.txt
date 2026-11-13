@@ -10,3 +10,5 @@ Telegram emoji animations are loaded from Emojiall GIF image URLs; internet acce
 
 
 Version 1.0 adds a local demo passcode screen, system authenticator support where available, original Metto terms, a community layout, Saved Messages, support chat, blocking, Stars/coins, rewarded-demo timer, and an animated banner shop. Email/SMS delivery, ads, payments, cross-device security, and the live messaging backend are not connected.
+
+Message actions include local reactions, replies, copy, edit, pin, and delete in Metto's own UI. These operate on the current browser's demo history; they are not a Telegram integration or cross-device sync.
