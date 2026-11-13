@@ -44,6 +44,50 @@
   `;
   document.head.append(style);
 
+  // Platform-aware interaction: iOS safe-area sheets, Android tap feedback/back,
+  // and pointer hover only on desktop. This stays within Metto's own visual system.
+  const ua = navigator.userAgent || '';
+  const platform = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    ? 'ios' : /Android/i.test(ua) ? 'android' : 'desktop';
+  document.documentElement.dataset.platform = platform;
+  const platformStyle = document.createElement('style');
+  platformStyle.textContent = `
+    html[data-platform="ios"] .modal-bg{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+    html[data-platform="ios"] .composer{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+    html[data-platform="ios"] .rail{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+    html[data-platform="android"] .rail-btn,html[data-platform="android"] .head-actions button,html[data-platform="android"] .send{touch-action:manipulation}
+    html[data-platform="android"] .metto-ripple{position:absolute;border-radius:50%;pointer-events:none;background:#caffdf55;transform:scale(0);animation:metto-ripple .42s ease-out forwards}
+    @keyframes metto-ripple{to{transform:scale(1);opacity:0}}
+    html[data-platform="desktop"] .rail-btn,html[data-platform="desktop"] .head-actions button{transition:background .18s ease,transform .18s ease}
+    html[data-platform="desktop"] .rail-btn:hover,html[data-platform="desktop"] .head-actions button:hover{transform:translateY(-1px)}
+    @media(prefers-reduced-motion:reduce){.metto-ripple{animation:none!important;display:none}}
+  `;
+  document.head.append(platformStyle);
+  if (platform === 'android') {
+    document.addEventListener('pointerdown', event => {
+      const button = event.target.closest('button'); if (!button || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const rect = button.getBoundingClientRect(), size = Math.max(rect.width, rect.height) * 1.8, ripple = document.createElement('i');
+      ripple.className = 'metto-ripple'; ripple.style.width = ripple.style.height = `${size}px`;
+      ripple.style.left = `${event.clientX - rect.left - size / 2}px`; ripple.style.top = `${event.clientY - rect.top - size / 2}px`;
+      if (getComputedStyle(button).position === 'static') button.style.position = 'relative';
+      button.style.overflow = 'hidden'; button.append(ripple); ripple.addEventListener('animationend', () => ripple.remove(), { once:true });
+      if (navigator.vibrate) navigator.vibrate(8);
+    }, { passive:true });
+  }
+  let mobileBackArmed = false;
+  document.addEventListener('click', event => {
+    if (platform !== 'desktop' && event.target.closest('#chatList [data-chat]') && !mobileBackArmed) {
+      mobileBackArmed = true; history.pushState({ mettoChat:true }, '', location.href);
+    }
+  }, true);
+  window.addEventListener('popstate', () => {
+    if (platform === 'desktop') return;
+    const close = document.querySelector('#modalHost .modal-bg .close');
+    if (close) { close.click(); mobileBackArmed = false; return; }
+    const back = document.querySelector('#backBtn');
+    if (document.querySelector('.shell.chat-open')) { back?.click(); mobileBackArmed = false; }
+  });
+
   function updateTabIndicator() {
     const tabs = $('.tabs'); if (!tabs) return;
     let indicator = $('.metto-tab-indicator', tabs);
