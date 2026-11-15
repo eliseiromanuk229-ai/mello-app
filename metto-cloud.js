@@ -4,7 +4,12 @@
   const AI_WORKER = 'https://wild-meadow-76d1.phujna56.workers.dev';
   const $ = selector => document.querySelector(selector);
   const state = { token: sessionStorage.getItem('metto.cloud.token') || '', user: null, chats: [], current: '', after: 0, register: false, timer: 0, view: 'home', banner: '', avatar: '', pendingUser: new URLSearchParams(location.search).get('u') || '', pinnedMessage:null, replyTo:null };
-  const stickerPack = ['😀','🥰','😂','😭','😎','🤔','😴','😡','🥳','🤝','👍','👎','❤️','🔥','✨','🎉','🌸','🐱','🐸','🦊'];
+  const stickerPacks = {
+    mood: ['😀','😄','😁','🥰','😍','😘','😂','🤣','😭','🥹','😎','🤔','😴','😡','🥳','😌','🙃','🤗'],
+    signs: ['👍','👎','👏','🙌','🤝','🙏','💪','👋','✌️','🫶','❤️','💚','💜','💔','🔥','✨','🎉','💫'],
+    friends: ['🐱','🐸','🦊','🐼','🐻','🐰','🐶','🦄','🐣','🐧','🌸','🌷','🍓','🍀','⭐','🌙','☀️','🎈']
+  };
+  const stickerPack = Object.values(stickerPacks).flat();
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
   const initials = value => [...String(value || 'M').trim()].slice(0, 1).join('').toUpperCase() || 'M';
   const bannerPath = id => /^banner-(0[1-9]|[1-3][0-9]|40)\.jpg$/.test(id || '') ? `./assets/banners/${id}` : /^video-(0[1-9]|1[0-9]|2[01])\.mp4$/.test(id || '') ? `./assets/banner-videos/${id}` : '';
@@ -46,7 +51,7 @@
     bubble.className = `bubble${mine ? ' mine' : ''}${isSticker ? ' sticker-bubble' : ''}${locationMatch?' location-bubble':''}`;
     const content = document.createElement('div');
     if(locationMatch){const link=document.createElement('a');link.className='location-card';link.href=`https://maps.google.com/?q=${locationMatch[1]},${locationMatch[2]}`;link.target='_blank';link.rel='noopener noreferrer';link.innerHTML='<span>📍</span><b>Геопозиция Metto</b><small>Открыть точку на карте</small>';content.append(link)}
-    else if (isSticker) content.textContent = body.slice('[[metto-sticker]]'.length);
+    else if (isSticker) { const art=document.createElement('span'); art.className=`metto-sticker-art sticker-motion-${Number(id||0)%4}`; art.textContent=body.slice('[[metto-sticker]]'.length); content.append(art); }
     else {
       const urlPattern = /https?:\/\/[^\s<>()]+/g; let cursor = 0, match;
       while ((match = urlPattern.exec(body))) {
@@ -131,9 +136,10 @@
   $('#composer').onsubmit = async event => { event.preventDefault(); const field = $('#message'); let body = field.value.trim(); if (!body || !state.current) return; if(state.replyTo)body=`↩ Ответ на: ${state.replyTo.body.slice(0,180)}\n${body}`; field.value = ''; await sendMessage(body); };
 
   function showStickers() {
-    const host = $('#modalHost'); host.innerHTML = `<div class="overlay" id="overlay"><section class="modal glass"><div class="modal-head"><h2>Стикеры Metto</h2><button id="closeStickers" class="icon" aria-label="Закрыть">×</button></div><p class="info" style="text-align:left;padding:0 0 10px">Набор Metto. Выбранный стикер отправится в этот чат.</p><div class="sticker-grid">${stickerPack.map((emoji,i)=>`<button class="sticker-choice" type="button" data-sticker="${i}" aria-label="Стикер ${i+1}">${emoji}</button>`).join('')}</div></section></div>`;
+    const host = $('#modalHost'); host.innerHTML = `<div class="overlay" id="overlay"><section class="modal glass sticker-modal"><div class="modal-head"><div><h2>Стикеры Metto</h2><small class="sticker-subtitle">Анимированные реакции для чата</small></div><button id="closeStickers" class="icon" aria-label="Закрыть">×</button></div><div class="sticker-tabs" role="tablist"><button class="active" data-pack="all">Все</button><button data-pack="mood">Эмоции</button><button data-pack="signs">Реакции</button><button data-pack="friends">Друзья</button></div><div class="sticker-grid">${stickerPack.map((emoji,i)=>`<button class="sticker-choice" type="button" data-sticker="${i}" data-emoji="${emoji}" data-category="${Object.keys(stickerPacks).find(key=>stickerPacks[key].includes(emoji))}" aria-label="Стикер ${i+1}"><span class="metto-sticker-art sticker-motion-${i%4}">${emoji}</span></button>`).join('')}</div><a class="sticker-source" href="https://www.emojiall.com/ru/image-emoji-platform/telegram/animation" target="_blank" rel="noopener noreferrer">Открыть каталог EmojiAll ↗</a><p class="sticker-license">Внешний каталог откроется отдельно. Встроенный набор Metto — собственные реакции на системных эмодзи.</p></section></div>`;
     const close = () => closeModal(); $('#closeStickers').onclick = close; $('#overlay').onclick = event => { if (event.target.id === 'overlay') close(); };
-    host.querySelectorAll('[data-sticker]').forEach(button => button.onclick = async () => { close(); await sendMessage(`[[metto-sticker]]${stickerPack[Number(button.dataset.sticker)]}`); });
+    host.querySelectorAll('[data-pack]').forEach(button=>button.onclick=()=>{host.querySelectorAll('[data-pack]').forEach(tab=>tab.classList.toggle('active',tab===button));host.querySelectorAll('[data-sticker]').forEach(tile=>tile.hidden=button.dataset.pack!=='all'&&tile.dataset.category!==button.dataset.pack)});
+    host.querySelectorAll('[data-sticker]').forEach(button => button.onclick = async () => { close(); await sendMessage(`[[metto-sticker]]${button.dataset.emoji}`); });
   }
   function showGifLink() {
     const host = $('#modalHost'); host.innerHTML = `<div class="overlay" id="overlay"><section class="modal glass"><div class="modal-head"><h2>GIF в чате</h2><button id="closeGif" class="icon" aria-label="Закрыть">×</button></div><p class="info" style="text-align:left;padding:0 0 10px">Открой каталог, скопируй GIF-ссылку и отправь её. Встроенный поиск GIF подключается вместе с сервером медиа.</p><div class="modal-actions"><a class="secondary" href="https://tenor.com/" target="_blank" rel="noopener noreferrer">Открыть каталог GIF</a><a class="secondary" href="https://giphy.com/" target="_blank" rel="noopener noreferrer">Другой каталог</a></div><label class="field"><span>Ссылка на GIF</span><input id="gifUrl" type="url" placeholder="https://…" inputmode="url"></label><button id="sendGif" class="primary">Отправить ссылку</button></section></div>`;
