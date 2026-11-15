@@ -85,6 +85,7 @@
   }
   async function sendMessage(body) {
     const id = state.current; if (!body || !id) return;
+    if (emojiPack.includes(body)) body=`[[metto-emoji:v1]]${encodeURIComponent(body)}`;
     try { const data = await post(`/api/chats/${encodeURIComponent(id)}/messages`, { body });
       if (state.current === id) { $('#messages').append(renderMessage(data.message, true)); $('#messages').scrollTop = $('#messages').scrollHeight; state.after = Math.max(state.after, Number(data.message.id) || 0); state.replyTo=null; $('#replyDraft')?.remove(); }
       loadChats(true);
@@ -152,7 +153,7 @@
     search.value='';search.placeholder=tab==='emoji'?'Найти эмодзи':tab==='stickers'?'Поиск эмодзи':'Вставь ссылку на GIF';
     if(tab==='emoji'||tab==='stickers')content.innerHTML=`<div class="media-emoji-grid">${emojiPack.map((emoji,i)=>`<button type="button" data-media-emoji="${i}" aria-label="Эмодзи ${i+1}"><span class="metto-emoji-art emoji-motion-${[...emoji].reduce((a,c)=>a+c.codePointAt(0),0)%8}">${esc(emoji)}</span></button>`).join('')}</div>`;
     else content.innerHTML=`<div class="media-links"><p class="info" style="text-align:left;padding:8px 2px">Вставь прямую ссылку на GIF или открой каталог.</p><a href="https://tenor.com/" target="_blank" rel="noopener noreferrer">Открыть Tenor ↗</a><a href="https://giphy.com/" target="_blank" rel="noopener noreferrer">Открыть GIPHY ↗</a><div class="media-send-row"><input id="mediaGifUrl" type="url" placeholder="https://…"><button id="mediaGifSend" type="button">➤</button></div></div>`;
-    content.querySelectorAll('[data-media-emoji]').forEach(button=>button.onclick=async()=>{if(!state.current)return;await sendMessage(`[[metto-emoji:v1]]${encodeURIComponent(emojiPack[Number(button.dataset.mediaEmoji)])}`)});
+    content.querySelectorAll('[data-media-emoji]').forEach(button=>button.onclick=()=>{const field=$('#message');if(!state.current||!field)return;field.value+=emojiPack[Number(button.dataset.mediaEmoji)];field.focus()});
     const sendGif=$('#mediaGifSend');if(sendGif)sendGif.onclick=async()=>{try{const url=new URL($('#mediaGifUrl').value.trim());if(!['http:','https:'].includes(url.protocol))throw new Error();await sendMessage(url.href);$('#mediaGifUrl').value=''}catch{toast('Вставь ссылку с https://')}};
   }
   $('#mediaClose').onclick=()=>{$('#mediaDrawer').classList.add('hidden');$('#app').classList.remove('media-open')};$('#mediaDrawer').querySelectorAll('[data-media]').forEach(button=>button.onclick=()=>renderMediaPanel(button.dataset.media));
@@ -161,7 +162,7 @@
     if(innerWidth>1100){renderMediaPanel('emoji');return}
     const host=$('#modalHost');host.innerHTML=`<div class="overlay" id="overlay"><section class="modal glass sticker-modal emoji-modal"><div class="modal-head"><div><h2>Эмодзи</h2><small class="sticker-subtitle">Выбери реакцию — она появится в чате с анимацией Metto</small></div><button id="closeEmoji" class="icon" aria-label="Закрыть">×</button></div><input id="emojiSearch" class="searchbox" placeholder="Найти эмодзи" aria-label="Найти эмодзи"><div class="sticker-grid">${emojiPack.map((emoji,i)=>`<button class="sticker-choice emoji-choice" type="button" data-emoji-index="${i}" aria-label="Эмодзи ${i+1}"><span class="metto-emoji-art emoji-motion-${[...emoji].reduce((a,c)=>a+c.codePointAt(0),0)%8}">${esc(emoji)}</span></button>`).join('')}</div></section></div>`;
     const close=()=>closeModal();$('#closeEmoji').onclick=close;$('#overlay').onclick=e=>{if(e.target.id==='overlay')close()};$('#emojiSearch').oninput=()=>host.querySelectorAll('[data-emoji-index]').forEach(b=>b.hidden=!b.textContent.includes($('#emojiSearch').value.trim()));
-    host.querySelectorAll('[data-emoji-index]').forEach(button=>button.onclick=async()=>{const emoji=emojiPack[Number(button.dataset.emojiIndex)];close();await sendMessage(`[[metto-emoji:v1]]${encodeURIComponent(emoji)}`)});
+    host.querySelectorAll('[data-emoji-index]').forEach(button=>button.onclick=()=>{const field=$('#message');if(!state.current||!field)return;field.value+=emojiPack[Number(button.dataset.emojiIndex)];field.focus();close()});
   }
   function showGifLink() {
     if(innerWidth>1100){renderMediaPanel('gif');return}
