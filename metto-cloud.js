@@ -18,7 +18,15 @@
     return data;
   }
   const post = (path, body) => api(path, { method:'POST', body:JSON.stringify(body) });
-  function closeModal() { $('#modalHost').replaceChildren(); }
+  function closeModal() {
+    const host = $('#modalHost'), overlay = host.querySelector('.overlay');
+    if (!overlay) { host.replaceChildren(); return; }
+    overlay.classList.add('closing');
+    const finish = event => { if (!event || event.target === overlay) { if (host.contains(overlay)) host.replaceChildren(); } };
+    const onEnd = event => { if (event.target === overlay) { overlay.removeEventListener('animationend', onEnd); finish(event); } };
+    overlay.addEventListener('animationend', onEnd);
+    setTimeout(() => finish(), 220);
+  }
   function setAvatar(node, user) {
     node.replaceChildren();
     if (user?.avatar) { const image = document.createElement('img'); image.src = user.avatar; image.alt = ''; node.append(image); }
@@ -130,13 +138,45 @@
     $('#profileQR').onclick = () => showQR(state.user);
   }
   function updateProfilePreviews() { const avatar = $('#avatarPreview'); if (avatar) avatar.src = state.avatar || `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" rx="50" fill="#286b4c"/><text x="50" y="62" text-anchor="middle" font-size="46" fill="white">${esc(initials(state.user?.name))}</text></svg>`)}`; const banner = $('#bannerPreview'); if (banner) setBanner(banner, state.banner); }
-  function showQR(user) { const handle = String(user?.username || '').replace(/^@/, ''); if (!handle) { toast('Сначала создай профиль Metto.'); return; } const link = new URL('./metto-cloud.html', location.href); link.searchParams.set('u', `@${handle}`); const image = `https://api.qrserver.com/v1/create-qr-code/?size=340x340&format=png&data=${encodeURIComponent(link.href)}`; const host = $('#modalHost'); host.innerHTML = `<div class="overlay" id="overlay"><section class="modal glass"><div class="modal-head"><h2>QR-код профиля</h2><button id="closeQR" class="icon" aria-label="Закрыть">×</button></div><div class="qr-card"><img src="${esc(image)}" alt="QR-код профиля" referrerpolicy="no-referrer"><div class="qr-handle">${esc(user.username)}</div><small>Отсканируй, чтобы найти профиль в Metto</small></div><button id="copyProfileLink" class="secondary" style="width:100%;margin-top:12px">Копировать ссылку</button></section></div>`; $('#closeQR').onclick = closeModal; $('#overlay').onclick = event => { if (event.target.id === 'overlay') closeModal(); }; $('#copyProfileLink').onclick = async () => { try { await navigator.clipboard.writeText(link.href); toast('Ссылка скопирована'); } catch { toast(link.href); } }; }
+  function showQR(user) {
+    const handle = String(user?.username || '').replace(/^@/, '');
+    if (!handle) { toast('Сначала создай профиль Metto.'); return; }
+    const link = new URL('./metto-cloud.html', location.href); link.searchParams.set('u', `@${handle}`);
+    const image = `https://api.qrserver.com/v1/create-qr-code/?size=420x420&format=png&color=10261a&bgcolor=f4fff7&margin=2&data=${encodeURIComponent(link.href)}`;
+    const host = $('#modalHost');
+    host.innerHTML = `<div class="overlay" id="overlay"><section class="modal glass"><div class="modal-head"><h2>Твой QR-профиль</h2><button id="closeQR" class="icon" aria-label="Закрыть">×</button></div><div class="qr-card"><div class="qr-brand"><span class="qr-brand-mark">M</span> METTO · ПРОФИЛЬ</div><div class="qr-code-frame"><img src="${esc(image)}" alt="QR-код профиля Metto" referrerpolicy="no-referrer"></div><div class="qr-handle">@${esc(handle)}</div><small>Наведи камеру, чтобы открыть профиль и написать</small><div class="qr-scan-line" aria-hidden="true"></div></div><div class="qr-actions"><button id="copyProfileLink" class="secondary">Копировать ссылку</button><button id="shareProfileLink" class="secondary">Поделиться</button></div></section></div>`;
+    $('#closeQR').onclick = closeModal; $('#overlay').onclick = event => { if (event.target.id === 'overlay') closeModal(); };
+    $('#copyProfileLink').onclick = async () => { try { await navigator.clipboard.writeText(link.href); toast('Ссылка скопирована'); } catch { toast(link.href); } };
+    $('#shareProfileLink').onclick = async () => { try { if (navigator.share) await navigator.share({ title:`Metto · @${handle}`, text:'Найди меня в Metto', url:link.href }); else { await navigator.clipboard.writeText(link.href); toast('Ссылка скопирована'); } } catch (error) { if (error.name !== 'AbortError') toast('Не удалось поделиться ссылкой'); } };
+  }
 
   function showSettings() {
     const host = $('#modalHost'), current = Number(localStorage.getItem('metto.glass.alpha') ?? 8); host.innerHTML = `<div class="overlay" id="overlay"><section class="modal glass"><div class="modal-head"><h2>Настройки</h2><button id="closeSettings" class="icon" aria-label="Закрыть">×</button></div><label class="field"><span>Прозрачность стекла <b id="glassValue">${current}%</b></span><div class="range-row"><span>Матовое</span><input id="glassRange" type="range" min="0" max="22" step="1" value="${current}"><span>Стекло</span></div></label><p class="info" style="text-align:left;padding:8px 0">Настройка сохраняется на этом устройстве.</p><button id="settingsProfile" class="secondary" style="width:100%">Открыть мой профиль</button></section></div>`; const close = () => closeModal(); $('#closeSettings').onclick = close; $('#overlay').onclick = event => { if (event.target.id === 'overlay') close(); }; $('#glassRange').oninput = event => applyGlass(event.target.value); $('#settingsProfile').onclick = showProfile;
   }
   function showAI() {
-    const host = $('#modalHost'); host.innerHTML = `<div class="overlay" id="overlay"><section class="modal glass"><div class="modal-head"><h2>Помощь ИИ</h2><button id="closeAI" class="icon" aria-label="Закрыть">×</button></div><p class="info" style="text-align:left;padding:0 0 10px">Спроси про Metto или попроси помочь с текстом. Ответ генерируется через подключённый Worker X.ai.</p><form id="aiForm" class="assistant-form"><textarea id="aiQuestion" maxlength="4000" placeholder="Чем помочь?" required></textarea><button class="primary" id="aiSend">Спросить ИИ</button></form><div id="aiAnswer" class="assistant-answer hidden" aria-live="polite"></div><small class="info">Не отправляй пароли, коды и личные данные.</small></section></div>`; const close = () => closeModal(); $('#closeAI').onclick = close; $('#overlay').onclick = event => { if (event.target.id === 'overlay') close(); }; $('#aiForm').onsubmit = async event => { event.preventDefault(); const button = $('#aiSend'), question = $('#aiQuestion').value.trim(); if (!question) return; button.disabled = true; button.textContent = 'Думаю…'; const answer = $('#aiAnswer'); answer.classList.remove('hidden'); answer.textContent = 'Готовлю ответ…'; try { const response = await fetch(AI_WORKER, { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ message:`Ты помощник мессенджера Metto. Отвечай коротко и по делу, не утверждай, что имеешь доступ к данным аккаунта. Вопрос: ${question}` }) }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || `Ошибка ИИ (${response.status})`); answer.textContent = data.reply || 'Пустой ответ.'; } catch (error) { answer.textContent = `Не удалось получить ответ: ${error.message}`; } finally { button.disabled = false; button.textContent = 'Спросить ИИ'; } };
+    const host = $('#modalHost');
+    host.innerHTML = `<div class="overlay" id="overlay"><section class="modal glass"><div class="modal-head"><h2>Metto AI</h2><button id="closeAI" class="icon" aria-label="Закрыть">×</button></div><p class="info" style="text-align:left;padding:0 0 10px">Помощник, переводчик и редактор текста. Контекст диалога хранится только пока это окно открыто.</p><form id="aiForm" class="assistant-form"><label class="field"><span>Что сделать?</span><select id="aiMode" class="searchbox"><option value="help">Ответить на вопрос</option><option value="improve">Исправить и улучшить текст</option><option value="rewrite">Переписать проще и понятнее</option><option value="summarize">Кратко пересказать</option><option value="translate">Перевести на английский</option><option value="reply">Предложить ответ собеседнику</option></select></label><textarea id="aiQuestion" maxlength="4000" placeholder="Напиши вопрос или вставь текст" required></textarea><label class="ai-deep"><input id="aiDeep" type="checkbox"><span>Глубокий режим</span><small>дольше, но подробнее</small></label><button class="primary" id="aiSend">Спросить ИИ</button></form><div id="aiAnswer" class="assistant-answer hidden" aria-live="polite"></div><div class="ai-actions"><button id="aiInsert" class="secondary hidden">Вставить в чат</button><button id="aiClear" class="secondary hidden">Очистить диалог</button></div><small class="info">Не отправляй пароли, коды подтверждения и другие секреты.</small></section></div>`;
+    const history = [];
+    const close = () => closeModal(); $('#closeAI').onclick = close; $('#overlay').onclick = event => { if (event.target.id === 'overlay') close(); };
+    $('#aiForm').onsubmit = async event => {
+      event.preventDefault(); const button = $('#aiSend'), question = $('#aiQuestion').value.trim(), mode = $('#aiMode').value; if (!question) return;
+      const instructions = { help:'Ответь на вопрос ясно и полезно.', improve:'Исправь ошибки и улучши стиль, сохранив смысл и язык оригинала. Выведи только готовый текст.', rewrite:'Перепиши проще и естественнее, сохранив смысл и язык оригинала. Выведи только готовый текст.', summarize:'Сделай короткое резюме на языке оригинала, сохрани важные факты.', translate:'Переведи текст на английский. Выведи только перевод.', reply:'Предложи дружелюбный и уместный ответ на сообщение. Не придумывай факты о пользователе.' };
+      button.disabled = true; button.textContent = 'Думаю…'; const answer = $('#aiAnswer'); answer.classList.remove('hidden'); answer.textContent = 'Готовлю ответ…'; $('#aiInsert').classList.add('hidden');
+      const prompt = `Ты Metto AI — помощник и редактор текста. ${instructions[mode]} Не утверждай, что видишь переписку или данные аккаунта. Пользователь явно передал тебе этот текст: «${question}»`;
+      history.push({ role:'user', content:prompt });
+      try { const response = await fetch(AI_WORKER, { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ messages:history.slice(-20), deepThinking:$('#aiDeep').checked }) }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || `Ошибка ИИ (${response.status})`); const reply = data.reply || 'Пустой ответ.'; history.push({ role:'assistant', content:reply }); answer.textContent = reply; $('#aiClear').classList.remove('hidden'); if (state.current) $('#aiInsert').classList.remove('hidden'); $('#aiQuestion').value = ''; }
+      catch (error) { history.pop(); answer.textContent = `Не удалось получить ответ: ${error.message}`; }
+      finally { button.disabled = false; button.textContent = 'Спросить ИИ'; }
+    };
+    $('#aiInsert').onclick = () => { const field = $('#message'); if (!state.current || !field) return; field.value = $('#aiAnswer').textContent; closeModal(); field.focus(); toast('Текст добавлен в поле сообщения'); };
+    $('#aiClear').onclick = () => { history.length = 0; $('#aiAnswer').classList.add('hidden'); $('#aiClear').classList.add('hidden'); $('#aiInsert').classList.add('hidden'); toast('Контекст диалога очищен'); };
+  }
+
+  function showPlans() {
+    const host = $('#modalHost');
+    host.innerHTML = `<div class="overlay" id="overlay"><section class="modal glass"><div class="modal-head"><h2>Metto Plus и Business</h2><button id="closePlans" class="icon" aria-label="Закрыть">×</button></div><p class="info" style="text-align:left;padding:0 0 10px">Предварительный просмотр будущих планов. Оплата и подписки пока не подключены — деньги с карты не списываются.</p><div class="saved-item" style="padding:16px;margin:10px 0"><b>Metto Plus</b><p class="info" style="text-align:left;padding:8px 0 0">Идеи для личного аккаунта: больше вариантов оформления, анимированные баннеры и расширенные настройки профиля.</p><small>Статус: планируется</small></div><div class="saved-item" style="padding:16px;margin:10px 0"><b>Metto Business</b><p class="info" style="text-align:left;padding:8px 0 0">Идеи для команд и небольших компаний: профиль организации, несколько администраторов и инструменты поддержки клиентов.</p><small>Статус: планируется</small></div><div class="saved-item" style="padding:14px;margin-top:14px"><b>Звёзды, монеты и реклама</b><p class="info" style="text-align:left;padding:8px 0 0">Рекламные награды появятся только после подключения официальной рекламной сети и её проверки. Сейчас баланс и награды не выдаются.</p></div></section></div>`;
+    $('#closePlans').onclick = closeModal;
+    $('#overlay').onclick = event => { if (event.target.id === 'overlay') closeModal(); };
   }
 
   function showFind(query = '') {
@@ -152,7 +192,7 @@
   }
 
   $('#newChat').onclick = $('#railFind').onclick = $('#welcomeFind').onclick = () => showFind();
-  $('#railFavorites').onclick = showFavorites; $('#railAI').onclick = showAI; $('#railProfile').onclick = showProfile; $('#railQR').onclick = () => showQR(state.user); $('#railSettings').onclick = showSettings;
+  $('#railFavorites').onclick = showFavorites; $('#railAI').onclick = showAI; $('#railPlans').onclick = showPlans; $('#railProfile').onclick = showProfile; $('#railQR').onclick = () => showQR(state.user); $('#railSettings').onclick = showSettings;
   $('#back').onclick = showWelcome; $('#refresh').onclick = () => loadMessages(); $('#specialBack').onclick = showWelcome; $('#favoriteAdd').onclick = addFavoriteNote;
   $('#logout').onclick = async () => { try { await post('/api/auth/logout', {}); } catch {} clearSession(); setMode(false); };
   async function health() {
