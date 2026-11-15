@@ -151,7 +151,7 @@
     } catch (error) { $('#findResults').textContent = error.message; }
   }
 
-  $('#newChat').onclick = $('#railFind').onclick = $('#welcomeFind').onclick = showFind;
+  $('#newChat').onclick = $('#railFind').onclick = $('#welcomeFind').onclick = () => showFind();
   $('#railFavorites').onclick = showFavorites; $('#railAI').onclick = showAI; $('#railProfile').onclick = showProfile; $('#railQR').onclick = () => showQR(state.user); $('#railSettings').onclick = showSettings;
   $('#back').onclick = showWelcome; $('#refresh').onclick = () => loadMessages(); $('#specialBack').onclick = showWelcome; $('#favoriteAdd').onclick = addFavoriteNote;
   $('#logout').onclick = async () => { try { await post('/api/auth/logout', {}); } catch {} clearSession(); setMode(false); };
