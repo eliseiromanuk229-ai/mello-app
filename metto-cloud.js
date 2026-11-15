@@ -4,6 +4,7 @@
   const AI_WORKER = 'https://wild-meadow-76d1.phujna56.workers.dev';
   const $ = selector => document.querySelector(selector);
   const state = { token: sessionStorage.getItem('metto.cloud.token') || '', user: null, chats: [], current: '', after: 0, register: false, timer: 0, view: 'home', banner: '', avatar: '', pendingUser: new URLSearchParams(location.search).get('u') || '' };
+  const stickerPack = ['😀','🥰','😂','😭','😎','🤔','😴','😡','🥳','🤝','👍','👎','❤️','🔥','✨','🎉','🌸','🐱','🐸','🦊'];
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
   const initials = value => [...String(value || 'M').trim()].slice(0, 1).join('').toUpperCase() || 'M';
   const bannerPath = id => /^banner-(0[1-9]|[1-3][0-9]|40)\.jpg$/.test(id || '') ? `./assets/banners/${id}` : /^video-(0[1-9]|1[0-9]|2[01])\.mp4$/.test(id || '') ? `./assets/banner-videos/${id}` : '';
@@ -24,6 +25,36 @@
     else node.textContent = initials(user?.name);
   }
   function setBanner(node, id) { node.replaceChildren(); const path = bannerPath(id); if (!path) return; const media = document.createElement(isVideoBanner(id) ? 'video' : 'img'); media.src = path; if (media.tagName === 'VIDEO') { media.autoplay = true; media.loop = true; media.muted = true; media.playsInline = true; media.preload = 'metadata'; } else media.alt = 'Баннер профиля'; node.append(media); }
+  function renderMessage(body, mine, createdAt, favoriteBody = body) {
+    const bubble = document.createElement('article');
+    const isSticker = body.startsWith('[[metto-sticker]]');
+    bubble.className = `bubble${mine ? ' mine' : ''}${isSticker ? ' sticker-bubble' : ''}`;
+    const content = document.createElement('div');
+    if (isSticker) content.textContent = body.slice('[[metto-sticker]]'.length);
+    else {
+      const urlPattern = /https?:\/\/[^\s<>()]+/g; let cursor = 0, match;
+      while ((match = urlPattern.exec(body))) {
+        content.append(document.createTextNode(body.slice(cursor, match.index)));
+        let safeUrl; try { safeUrl = new URL(match[0]); } catch { content.append(document.createTextNode(match[0])); cursor = urlPattern.lastIndex; continue; }
+        if (!['http:', 'https:'].includes(safeUrl.protocol)) content.append(document.createTextNode(match[0]));
+        else { const link = document.createElement('a'); link.href = safeUrl.href; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = match[0]; content.append(link); }
+        cursor = urlPattern.lastIndex;
+      }
+      content.append(document.createTextNode(body.slice(cursor)));
+    }
+    bubble.append(content);
+    const time = document.createElement('time'); time.textContent = new Intl.DateTimeFormat('ru', { hour:'2-digit', minute:'2-digit' }).format(new Date(createdAt)); bubble.append(time);
+    const save = document.createElement('button'); save.className = 'message-save'; save.type = 'button'; save.title = 'Сохранить в Избранное'; save.setAttribute('aria-label', save.title); save.textContent = '☆';
+    save.onclick = async () => { try { await post('/api/favorites', { body:favoriteBody }); toast('Сохранено в Избранное'); save.textContent = '★'; } catch (error) { toast(error.message); } };
+    bubble.append(save); return bubble;
+  }
+  async function sendMessage(body) {
+    const id = state.current; if (!body || !id) return;
+    try { const data = await post(`/api/chats/${encodeURIComponent(id)}/messages`, { body });
+      if (state.current === id) { $('#messages').append(renderMessage(data.message.body, true, data.message.createdAt)); $('#messages').scrollTop = $('#messages').scrollHeight; state.after = Math.max(state.after, Number(data.message.id) || 0); }
+      loadChats(true);
+    } catch (error) { toast(error.message); }
+  }
   function applyGlass(value) { const amount = Math.max(0, Math.min(22, Number(value) || 0)); document.documentElement.style.setProperty('--glass-alpha', String(amount / 100)); localStorage.setItem('metto.glass.alpha', String(amount)); const label = $('#glassValue'); if (label) label.textContent = `${amount}%`; }
   function clearSession() { state.token = ''; state.user = null; sessionStorage.removeItem('metto.cloud.token'); clearInterval(state.timer); $('#app').classList.add('hidden'); $('#auth').classList.remove('hidden'); }
   async function setSession(data) {
@@ -52,11 +83,22 @@
   async function loadMessages(silent = false) {
     const id = state.current; if (!id) return;
     try { const data = await api(`/api/chats/${encodeURIComponent(id)}/messages?after=${state.after}`); if (state.current !== id) return; const host = $('#messages');
-      for (const message of data.messages) { state.after = Math.max(state.after, Number(message.id) || 0); const bubble = document.createElement('article'); bubble.className = 'bubble' + (message.senderId === state.user.id ? ' mine' : ''); const content = document.createElement('div'); content.textContent = message.body; bubble.append(content); const time = document.createElement('time'); time.textContent = new Intl.DateTimeFormat('ru', { hour:'2-digit', minute:'2-digit' }).format(new Date(message.createdAt)); bubble.append(time); const save = document.createElement('button'); save.className = 'message-save'; save.type = 'button'; save.title = 'Сохранить в Избранное'; save.setAttribute('aria-label', save.title); save.textContent = '☆'; save.onclick = async () => { try { await post('/api/favorites', { body:message.body }); toast('Сохранено в Избранное'); save.textContent = '★'; } catch (error) { toast(error.message); } }; bubble.append(save); host.append(bubble); }
+      for (const message of data.messages) { state.after = Math.max(state.after, Number(message.id) || 0); host.append(renderMessage(message.body, message.senderId === state.user.id, message.createdAt)); }
       if (data.messages.length) host.scrollTop = host.scrollHeight;
     } catch (error) { if (!silent) toast(error.message); }
   }
-  $('#composer').onsubmit = async event => { event.preventDefault(); const field = $('#message'), body = field.value.trim(), id = state.current; if (!body || !id) return; field.value = ''; try { const data = await post(`/api/chats/${encodeURIComponent(id)}/messages`, { body }); if (state.current === id) { const host = $('#messages'), bubble = document.createElement('article'); bubble.className = 'bubble mine'; const content = document.createElement('div'); content.textContent = data.message.body; bubble.append(content); const time = document.createElement('time'); time.textContent = new Intl.DateTimeFormat('ru', { hour:'2-digit', minute:'2-digit' }).format(new Date(data.message.createdAt)); bubble.append(time); const save = document.createElement('button'); save.className = 'message-save'; save.type = 'button'; save.title = 'Сохранить в Избранное'; save.textContent = '☆'; save.onclick = async () => { try { await post('/api/favorites', { body }); toast('Сохранено в Избранное'); } catch (error) { toast(error.message); } }; bubble.append(save); host.append(bubble); host.scrollTop = host.scrollHeight; state.after = Math.max(state.after, Number(data.message.id) || 0); } loadChats(true); } catch (error) { field.value = body; toast(error.message); } };
+  $('#composer').onsubmit = async event => { event.preventDefault(); const field = $('#message'), body = field.value.trim(); if (!body || !state.current) return; field.value = ''; await sendMessage(body); };
+
+  function showStickers() {
+    const host = $('#modalHost'); host.innerHTML = `<div class="overlay" id="overlay"><section class="modal glass"><div class="modal-head"><h2>Стикеры Metto</h2><button id="closeStickers" class="icon" aria-label="Закрыть">×</button></div><p class="info" style="text-align:left;padding:0 0 10px">Набор Metto. Выбранный стикер отправится в этот чат.</p><div class="sticker-grid">${stickerPack.map((emoji,i)=>`<button class="sticker-choice" type="button" data-sticker="${i}" aria-label="Стикер ${i+1}">${emoji}</button>`).join('')}</div></section></div>`;
+    const close = () => closeModal(); $('#closeStickers').onclick = close; $('#overlay').onclick = event => { if (event.target.id === 'overlay') close(); };
+    host.querySelectorAll('[data-sticker]').forEach(button => button.onclick = async () => { close(); await sendMessage(`[[metto-sticker]]${stickerPack[Number(button.dataset.sticker)]}`); });
+  }
+  function showGifLink() {
+    const host = $('#modalHost'); host.innerHTML = `<div class="overlay" id="overlay"><section class="modal glass"><div class="modal-head"><h2>GIF в чате</h2><button id="closeGif" class="icon" aria-label="Закрыть">×</button></div><p class="info" style="text-align:left;padding:0 0 10px">Открой каталог, скопируй GIF-ссылку и отправь её. Встроенный поиск GIF подключается вместе с сервером медиа.</p><div class="modal-actions"><a class="secondary" href="https://tenor.com/" target="_blank" rel="noopener noreferrer">Открыть каталог GIF</a><a class="secondary" href="https://giphy.com/" target="_blank" rel="noopener noreferrer">Другой каталог</a></div><label class="field"><span>Ссылка на GIF</span><input id="gifUrl" type="url" placeholder="https://…" inputmode="url"></label><button id="sendGif" class="primary">Отправить ссылку</button></section></div>`;
+    const close = () => closeModal(); $('#closeGif').onclick = close; $('#overlay').onclick = event => { if (event.target.id === 'overlay') close(); }; $('#sendGif').onclick = async () => { try { const url = new URL($('#gifUrl').value.trim()); if (!['http:','https:'].includes(url.protocol)) throw new Error(); close(); await sendMessage(url.href); } catch { toast('Вставь корректную ссылку GIF с https://'); } };
+  }
+  $('#stickerButton').onclick = showStickers; $('#gifButton').onclick = showGifLink;
 
   function showSpecial(title, content, back = showWelcome) { state.current = ''; state.view = title.toLowerCase(); $('#welcome').classList.add('hidden'); $('#chatHead').classList.add('hidden'); $('#peerBanner').classList.add('hidden'); $('#messages').classList.add('hidden'); $('#composer').classList.add('hidden'); $('#chatInfo').classList.add('hidden'); $('#specialView').classList.remove('hidden'); $('#specialTitle').textContent = title; $('#specialContent').replaceChildren(); if (typeof content === 'function') content($('#specialContent')); $('#specialBack').onclick = back; $('#favoriteAdd').classList.toggle('hidden', title !== 'Избранное'); $('#pane').classList.add('mobile-open'); $('#sidebar').classList.add('mobile-hidden'); }
   async function showFavorites() {
